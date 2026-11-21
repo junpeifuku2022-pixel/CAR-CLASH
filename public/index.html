@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <title>CAR CLASH</title>
 
 <style>
@@ -15,6 +17,10 @@
 
 *{
   box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-touch-callout:none;
+  -webkit-user-select:none;
+  user-select:none;
 }
 
 html,body{
@@ -25,10 +31,18 @@ html,body{
   background:var(--bg);
   color:white;
   font-family:system-ui,sans-serif;
+  overscroll-behavior:none;
+  touch-action:none;
 }
 
 button,input{
   font:inherit;
+}
+
+input{
+  -webkit-user-select:text;
+  user-select:text;
+  -webkit-touch-callout:default;
 }
 
 button{
@@ -38,7 +52,8 @@ button{
   color:white;
   font-weight:800;
   padding:11px 15px;
-  touch-action:manipulation;
+  touch-action:none;
+  cursor:pointer;
 }
 
 button:active{
@@ -59,6 +74,7 @@ button.primary{
   height:100%;
   width:100%;
   position:relative;
+  overflow:hidden;
 }
 
 .screen{
@@ -67,6 +83,7 @@ button.primary{
   overflow:auto;
   padding:16px;
   background:linear-gradient(145deg,#10192c,#243c5c);
+  touch-action:pan-y;
 }
 
 .panel{
@@ -190,6 +207,8 @@ p{
   inset:0;
   background:#17263e;
   overflow:hidden;
+  touch-action:none;
+  overscroll-behavior:none;
 }
 
 #gameCanvas{
@@ -197,6 +216,8 @@ p{
   height:100%;
   display:block;
   touch-action:none;
+  -webkit-user-select:none;
+  user-select:none;
 }
 
 #hud{
@@ -245,6 +266,7 @@ p{
   box-shadow:0 4px 0 #0a1427;
   user-select:none;
   -webkit-user-select:none;
+  -webkit-touch-callout:none;
   touch-action:none;
 }
 
@@ -260,6 +282,8 @@ p{
   justify-content:center;
   background:#07101dcc;
   padding:16px;
+  z-index:10;
+  touch-action:auto;
 }
 
 #result .panel{
@@ -561,11 +585,9 @@ function carImage(){
   c.height = 225;
 
   const ctx = c.getContext("2d");
-
   ctx.clearRect(0,0,c.width,c.height);
   ctx.drawImage(dc,0,0,400,225);
 
-  // 透過を保てるWebPを優先
   const qualities = [0.65,0.5,0.35];
 
   for(const quality of qualities){
@@ -579,21 +601,31 @@ function carImage(){
     }
   }
 
-  // WebP非対応の場合のPNG
-  return c.toDataURL("image/png");
+  const png = c.toDataURL("image/png");
+
+  if(png.length < 180000) return png;
+
+  alert("車の画像が大きすぎます。少しシンプルに描いてください。");
+  return "";
 }
 
 $("toEditor").onclick = ()=>show("editor");
 $("backMenu").onclick = ()=>show("menu");
 
 $("saveCar").onclick = ()=>{
-  savedCar = carImage();
+  const result = carImage();
+
+  if(!result) return;
+
+  savedCar = result;
   show("lobby");
 };
 
 $("quickPlay").onclick = ()=>{
   if(!savedCar){
-    savedCar = carImage();
+    const result = carImage();
+    if(!result) return;
+    savedCar = result;
   }
 
   show("lobby");
@@ -607,6 +639,7 @@ $("leaveLobby").onclick = ()=>{
     socket = null;
   }
 
+  releaseAllInputs();
   show("menu");
 };
 
@@ -637,10 +670,15 @@ function connect(){
 
   status("サーバーに接続中…");
 
-  // 前回の画像データをリセット
   for(const id of Object.keys(carCache)){
     delete carCache[id];
   }
+
+  previousState = null;
+  currentState = null;
+  cameraX = 600;
+  cameraY = 350;
+  shake = 0;
 
   socket = io(url,{
     transports:["websocket","polling"],
@@ -678,11 +716,8 @@ function connect(){
     myId = d.id;
   });
 
-  // 車画像は状態通信と分けて受け取る
   socket.on("carUpdate",data=>{
-    if(!data || !data.id || typeof data.car!=="string"){
-      return;
-    }
+    if(!data || !data.id || typeof data.car!=="string") return;
 
     const im = new Image();
 
@@ -694,14 +729,11 @@ function connect(){
   });
 
   socket.on("carRemove",data=>{
-    if(data && data.id){
-      delete carCache[data.id];
-    }
+    if(data && data.id) delete carCache[data.id];
   });
 
   socket.on("state",s=>{
     if(!s || !Array.isArray(s.players)) return;
-
     receiveState(s);
   });
 
@@ -746,11 +778,17 @@ function releaseAllInputs(){
   input.jump = false;
   input.boost = false;
 
+  document.querySelectorAll("[data-input]").forEach(b=>{
+    b.classList.remove("pressed");
+  });
+
   sendInput();
 }
 
 document.querySelectorAll("[data-input]").forEach(b=>{
   const k = b.dataset.input;
+
+  b.addEventListener("contextmenu",e=>e.preventDefault());
 
   b.addEventListener("pointerdown",e=>{
     e.preventDefault();
@@ -760,6 +798,7 @@ document.querySelectorAll("[data-input]").forEach(b=>{
     }catch(_){}
 
     input[k] = true;
+    b.classList.add("pressed");
     sendInput();
   });
 
@@ -767,6 +806,7 @@ document.querySelectorAll("[data-input]").forEach(b=>{
     e.preventDefault();
 
     input[k] = false;
+    b.classList.remove("pressed");
     sendInput();
   };
 
@@ -775,16 +815,12 @@ document.querySelectorAll("[data-input]").forEach(b=>{
   b.addEventListener("lostpointercapture",up);
 });
 
-// アプリ切り替え・フォーカス喪失時に操作を解除
 window.addEventListener("blur",releaseAllInputs);
 
 document.addEventListener("visibilitychange",()=>{
-  if(document.hidden){
-    releaseAllInputs();
-  }
+  if(document.hidden) releaseAllInputs();
 });
 
-// 再戦
 $("again").onclick = ()=>{
   $("result").classList.add("hidden");
   show("lobby");
@@ -793,6 +829,41 @@ $("again").onclick = ()=>{
     socket.emit("ready");
   }
 };
+
+// iPad Safariのダブルタップ拡大・長押しメニュー対策
+document.addEventListener("contextmenu",e=>{
+  if(!e.target.closest("input")){
+    e.preventDefault();
+  }
+});
+
+document.addEventListener("dblclick",e=>{
+  e.preventDefault();
+});
+
+document.addEventListener("gesturestart",e=>{
+  e.preventDefault();
+},{passive:false});
+
+document.addEventListener("gesturechange",e=>{
+  e.preventDefault();
+},{passive:false});
+
+document.addEventListener("gestureend",e=>{
+  e.preventDefault();
+},{passive:false});
+
+let lastTouchEnd = 0;
+
+document.addEventListener("touchend",e=>{
+  const now = Date.now();
+
+  if(now-lastTouchEnd <= 300){
+    e.preventDefault();
+  }
+
+  lastTouchEnd = now;
+},{passive:false});
 
 // 背景
 const bg = new Image();
@@ -806,31 +877,40 @@ bg.onload = ()=>{
 
 // ゲーム画面
 const gc = $("gameCanvas");
-const g = gc.getContext("2d");
+const g = gc.getContext("2d",{alpha:false});
 
 const carCache = {};
 
-// 状態の補間用
 let previousState = null;
 let currentState = null;
 let stateReceivedAt = 0;
+
+let cameraX = 600;
+let cameraY = 350;
+let cameraZoom = 1;
+let shake = 0;
+
+let lastFrame = performance.now();
 
 function receiveState(s){
   previousState = currentState || s;
   currentState = s;
   stateReceivedAt = performance.now();
+
+  // 衝突時の揺れ
+  const me = s.players.find(p=>p.id===myId);
+
+  if(me && me.impact > 0.45){
+    shake = Math.max(shake,me.impact*9);
+  }
 }
 
-// 2つの状態の間を滑らかに補間
 function getSmoothState(now){
   if(!currentState) return null;
-
   if(!previousState) return currentState;
 
-  const alpha = Math.max(
-    0,
-    Math.min(1,(now-stateReceivedAt)/100)
-  );
+  const elapsed = Math.max(0,now-stateReceivedAt);
+  const alpha = Math.max(0,Math.min(1,elapsed/33.33));
 
   const oldPlayers = new Map();
 
@@ -841,35 +921,60 @@ function getSmoothState(now){
   const players = currentState.players.map(p=>{
     const old = oldPlayers.get(p.id);
 
-    if(!old){
-      return p;
-    }
+    if(!old) return p;
+
+    // 通信間隔の間だけ少し先を予測
+    const extra = Math.min(elapsed/1000,0.045);
+
+    const predictedX = p.x + (p.vx || 0)*extra;
+    const predictedY = p.y + (p.vy || 0)*extra;
 
     return {
       ...p,
-      x:old.x+(p.x-old.x)*alpha,
-      y:old.y+(p.y-old.y)*alpha
+      x:old.x+(predictedX-old.x)*alpha,
+      y:old.y+(predictedY-old.y)*alpha,
+      angle:old.angle+(p.angle-old.angle)*alpha,
+      squash:old.squash+(p.squash-old.squash)*alpha
     };
   });
 
-  return {
-    ...currentState,
-    players
-  };
+  return {...currentState,players};
 }
 
-// 背景とステージ
+function resizeCanvas(){
+  const dpr = Math.min(window.devicePixelRatio || 1,1.5);
+
+  const w = Math.max(1,gc.clientWidth);
+  const h = Math.max(1,gc.clientHeight);
+
+  const targetW = Math.round(w*dpr);
+  const targetH = Math.round(h*dpr);
+
+  if(gc.width!==targetW || gc.height!==targetH){
+    gc.width = targetW;
+    gc.height = targetH;
+  }
+
+  g.setTransform(
+    gc.width/1200,0,
+    0,gc.height/700,
+    0,0
+  );
+}
+
+window.addEventListener("resize",resizeCanvas);
+resizeCanvas();
+
 function drawBackground(){
-  g.clearRect(0,0,1200,700);
+  g.fillStyle = "#83c9e9";
+  g.fillRect(0,0,1200,700);
 
   if(bgReady){
     g.drawImage(bg,0,0,1200,500);
   }else{
     const gr = g.createLinearGradient(0,0,0,500);
-
     gr.addColorStop(0,"#83c9e9");
     gr.addColorStop(1,"#d9e9ee");
-
     g.fillStyle = gr;
     g.fillRect(0,0,1200,500);
   }
@@ -896,15 +1001,40 @@ function drawBackground(){
   g.fillText("ARENA STREET",24,540);
 }
 
-// 車
 function drawCar(p){
   g.save();
 
   g.translate(p.x,p.y);
 
-  if(p.facing<0){
-    g.scale(-1,1);
+  // つぶれ表現
+  const squash = Math.max(0.62,Math.min(1.12,p.squash || 1));
+
+  g.rotate(p.angle || 0);
+  g.scale(p.facing<0?-1:1,1);
+
+  // 衝撃のスピード線
+  if((p.impact || 0)>0.35){
+    g.globalAlpha = Math.min(0.65,p.impact*0.7);
+    g.strokeStyle = "#fff4b2";
+    g.lineWidth = 4;
+
+    for(let i=0;i<3;i++){
+      g.beginPath();
+      g.moveTo(-58-i*8,-18+i*12);
+      g.lineTo(-85-i*12,-18+i*12);
+      g.stroke();
+    }
+
+    g.globalAlpha = 1;
   }
+
+  g.scale(1/squash,squash);
+
+  // 影
+  g.fillStyle = "#17202b66";
+  g.beginPath();
+  g.ellipse(0,27,52,8,0,0,Math.PI*2);
+  g.fill();
 
   // タイヤ
   g.fillStyle = "#171c25";
@@ -922,13 +1052,11 @@ function drawCar(p){
   g.arc(26,12,6,0,Math.PI*2);
   g.fill();
 
-  // 描いた車
   const im = carCache[p.id];
 
   if(im && im.complete && im.naturalWidth){
     g.drawImage(im,-52,-49,104,58);
   }else{
-    // 画像読み込み前・CPU用の車
     g.fillStyle = p.color || "#f5b84a";
     g.fillRect(-48,-28,96,38);
 
@@ -939,8 +1067,9 @@ function drawCar(p){
   g.restore();
 }
 
-// プレイヤー名
 function drawPlayerName(p){
+  g.save();
+
   g.fillStyle = "#102036";
   g.fillRect(p.x-34,p.y-65,68,7);
 
@@ -952,10 +1081,42 @@ function drawPlayerName(p){
   g.textAlign = "center";
 
   g.fillText(p.name,p.x,p.y-75);
+
+  g.restore();
 }
 
-// ゲーム全体を描画
-function drawGame(s){
+function updateCamera(players,dt){
+  const me = players.find(p=>p.id===myId && p.alive);
+
+  if(me){
+    const speed = Math.abs(me.vx || 0);
+
+    const targetX = me.x + (me.vx || 0)*8;
+    const targetY = 350 + Math.max(-35,Math.min(45,(me.y-464)*0.12));
+
+    cameraX += (targetX-cameraX)*Math.min(1,dt*5);
+    cameraY += (targetY-cameraY)*Math.min(1,dt*4);
+
+    const targetZoom = Math.max(0.88,Math.min(1.05,1-speed*0.006));
+    cameraZoom += (targetZoom-cameraZoom)*Math.min(1,dt*3);
+  }
+}
+
+function drawGame(s,dt){
+  updateCamera(s.players || [],dt);
+
+  shake *= 0.82;
+  if(shake < 0.15) shake = 0;
+
+  g.save();
+
+  const shakeX = (Math.random()-0.5)*shake;
+  const shakeY = (Math.random()-0.5)*shake;
+
+  g.translate(600+shakeX,350+shakeY);
+  g.scale(cameraZoom,cameraZoom);
+  g.translate(-cameraX,-cameraY);
+
   drawBackground();
 
   for(const p of s.players || []){
@@ -964,6 +1125,8 @@ function drawGame(s){
     drawCar(p);
     drawPlayerName(p);
   }
+
+  g.restore();
 
   $("hudState").textContent =
     s.status || "BUMP! STAY ON THE STREET";
@@ -976,13 +1139,15 @@ function drawGame(s){
     "台";
 }
 
-// 画面描画を毎フレーム実行
 function renderLoop(now){
+  const dt = Math.min(0.05,(now-lastFrame)/1000);
+  lastFrame = now;
+
   if(currentState && !$("gameScreen").classList.contains("hidden")){
     const smoothState = getSmoothState(now);
 
     if(smoothState){
-      drawGame(smoothState);
+      drawGame(smoothState,dt);
     }
   }
 
