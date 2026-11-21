@@ -1,473 +1,996 @@
-
 <!doctype html>
 <html lang="ja">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>CAR CLASH</title>
+
 <style>
-:root{--bg:#10192c;--panel:#1d2b48;--line:#6f91c4;--gold:#ffe18a}
-*{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:white;font-family:system-ui,sans-serif}
-button,input{font:inherit}
-button{border:2px solid #d8e8ff;border-radius:13px;background:#304d78;color:white;font-weight:800;padding:11px 15px;touch-action:manipulation}
-button:active{transform:scale(.97);background:#456b9f}
-button.primary{background:#b35b42;border-color:#ffe0b0}
-.hidden{display:none!important}
-#app{height:100%;width:100%;position:relative}
-.screen{position:absolute;inset:0;overflow:auto;padding:16px;background:linear-gradient(145deg,#10192c,#243c5c)}
-.panel{max-width:760px;margin:auto;background:#1b2a46ed;border:2px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 15px 45px #0006}
-h1{font-size:clamp(38px,9vw,66px);line-height:1;margin:8px 0;color:var(--gold);text-align:center;text-shadow:4px 5px #693d48}
-h2{margin:4px 0 12px;color:var(--gold)}
-p{line-height:1.55;color:#e4efff}
-.sub{text-align:center;color:#b9d4ef}
-.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
-.row>*{flex:1}
-.field{display:block;width:100%;background:#0d172a;border:1px solid #6f91c4;color:white;border-radius:10px;padding:11px;margin:6px 0 12px}
-#menu,#editor,#lobby{display:flex;align-items:center;justify-content:center}
-#menu .panel{width:min(100%,560px);text-align:center}
-#editor .panel{width:min(100%,760px)}
-#drawCanvas{width:100%;height:auto;aspect-ratio:16/9;display:block;background-color:#eaf1f7;background-image:radial-gradient(#c4d4e4 1px,transparent 1px);background-size:18px 18px;border:3px solid #a9c9e9;border-radius:12px;touch-action:none}
-#inkTrack{height:14px;background:#091426;border-radius:20px;overflow:hidden;border:1px solid #7896bd;flex:1}
-#inkFill{height:100%;width:100%;background:linear-gradient(90deg,#63e6b3,#ffdc72)}
-.small{font-size:12px;color:#b8cce8}
-#lobby .panel{width:min(100%,560px)}
-#status{padding:10px;background:#0e1a30;border-radius:10px;color:#9de8da;margin:10px 0}
-#gameScreen{position:absolute;inset:0;background:#17263e;overflow:hidden}
-#gameCanvas{width:100%;height:100%;display:block}
-#hud{position:absolute;top:calc(8px + env(safe-area-inset-top));left:8px;right:8px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
-.hudbox{background:#10192cdd;border:1px solid #9dbbe2;border-radius:12px;padding:8px 11px;font-size:13px;font-weight:800}
-#touchControls{position:absolute;left:10px;right:10px;bottom:calc(12px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:end;pointer-events:none}
-.touchgroup{display:flex;gap:8px;pointer-events:auto}
-.touchbtn{width:clamp(54px,15vw,76px);height:clamp(54px,15vw,76px);border-radius:50%;font-size:22px;background:#203b63df;box-shadow:0 4px 0 #0a1427;user-select:none;touch-action:none}
-.touchbtn.boost{background:#a84e3bdf}
-#result{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#07101dcc;padding:16px}
-#result .panel{text-align:center;width:min(100%,420px)}
-@media(min-width:800px){#touchControls{opacity:.82}.touchbtn{width:70px;height:70px}}
+:root{
+  --bg:#10192c;
+  --panel:#1d2b48;
+  --line:#6f91c4;
+  --gold:#ffe18a;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:var(--bg);
+  color:white;
+  font-family:system-ui,sans-serif;
+}
+
+button,input{
+  font:inherit;
+}
+
+button{
+  border:2px solid #d8e8ff;
+  border-radius:13px;
+  background:#304d78;
+  color:white;
+  font-weight:800;
+  padding:11px 15px;
+  touch-action:manipulation;
+}
+
+button:active{
+  transform:scale(.97);
+  background:#456b9f;
+}
+
+button.primary{
+  background:#b35b42;
+  border-color:#ffe0b0;
+}
+
+.hidden{
+  display:none!important;
+}
+
+#app{
+  height:100%;
+  width:100%;
+  position:relative;
+}
+
+.screen{
+  position:absolute;
+  inset:0;
+  overflow:auto;
+  padding:16px;
+  background:linear-gradient(145deg,#10192c,#243c5c);
+}
+
+.panel{
+  max-width:760px;
+  margin:auto;
+  background:#1b2a46ed;
+  border:2px solid var(--line);
+  border-radius:20px;
+  padding:18px;
+  box-shadow:0 15px 45px #0006;
+}
+
+h1{
+  font-size:clamp(38px,9vw,66px);
+  line-height:1;
+  margin:8px 0;
+  color:var(--gold);
+  text-align:center;
+  text-shadow:4px 5px #693d48;
+}
+
+h2{
+  margin:4px 0 12px;
+  color:var(--gold);
+}
+
+p{
+  line-height:1.55;
+  color:#e4efff;
+}
+
+.sub{
+  text-align:center;
+  color:#b9d4ef;
+}
+
+.row{
+  display:flex;
+  gap:9px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
+.row>*{
+  flex:1;
+}
+
+.field{
+  display:block;
+  width:100%;
+  background:#0d172a;
+  border:1px solid #6f91c4;
+  color:white;
+  border-radius:10px;
+  padding:11px;
+  margin:6px 0 12px;
+}
+
+#menu,#editor,#lobby{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+#menu .panel{
+  width:min(100%,560px);
+  text-align:center;
+}
+
+#editor .panel{
+  width:min(100%,760px);
+}
+
+#drawCanvas{
+  width:100%;
+  height:auto;
+  aspect-ratio:16/9;
+  display:block;
+  background-color:#eaf1f7;
+  background-image:radial-gradient(#c4d4e4 1px,transparent 1px);
+  background-size:18px 18px;
+  border:3px solid #a9c9e9;
+  border-radius:12px;
+  touch-action:none;
+}
+
+#inkTrack{
+  height:14px;
+  background:#091426;
+  border-radius:20px;
+  overflow:hidden;
+  border:1px solid #7896bd;
+  flex:1;
+}
+
+#inkFill{
+  height:100%;
+  width:100%;
+  background:linear-gradient(90deg,#63e6b3,#ffdc72);
+}
+
+.small{
+  font-size:12px;
+  color:#b8cce8;
+}
+
+#lobby .panel{
+  width:min(100%,560px);
+}
+
+#status{
+  padding:10px;
+  background:#0e1a30;
+  border-radius:10px;
+  color:#9de8da;
+  margin:10px 0;
+}
+
+#gameScreen{
+  position:absolute;
+  inset:0;
+  background:#17263e;
+  overflow:hidden;
+}
+
+#gameCanvas{
+  width:100%;
+  height:100%;
+  display:block;
+  touch-action:none;
+}
+
+#hud{
+  position:absolute;
+  top:calc(8px + env(safe-area-inset-top));
+  left:8px;
+  right:8px;
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  pointer-events:none;
+}
+
+.hudbox{
+  background:#10192cdd;
+  border:1px solid #9dbbe2;
+  border-radius:12px;
+  padding:8px 11px;
+  font-size:13px;
+  font-weight:800;
+}
+
+#touchControls{
+  position:absolute;
+  left:10px;
+  right:10px;
+  bottom:calc(12px + env(safe-area-inset-bottom));
+  display:flex;
+  justify-content:space-between;
+  align-items:end;
+  pointer-events:none;
+}
+
+.touchgroup{
+  display:flex;
+  gap:8px;
+  pointer-events:auto;
+}
+
+.touchbtn{
+  width:clamp(54px,15vw,76px);
+  height:clamp(54px,15vw,76px);
+  border-radius:50%;
+  font-size:22px;
+  background:#203b63df;
+  box-shadow:0 4px 0 #0a1427;
+  user-select:none;
+  -webkit-user-select:none;
+  touch-action:none;
+}
+
+.touchbtn.boost{
+  background:#a84e3bdf;
+}
+
+#result{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#07101dcc;
+  padding:16px;
+}
+
+#result .panel{
+  text-align:center;
+  width:min(100%,420px);
+}
+
+@media(min-width:800px){
+  #touchControls{
+    opacity:.82;
+  }
+
+  .touchbtn{
+    width:70px;
+    height:70px;
+  }
+}
 </style>
 </head>
+
 <body>
 <div id="app">
 
 <section id="menu" class="screen">
- <div class="panel">
-  <h1>CAR CLASH</h1>
-  <p class="sub">DRAW YOUR CAR. BUMP YOUR RIVALS.</p>
-  <p>自分で描いた車で、相手をステージの外へ押し出そう！</p>
-  <label>プレイヤー名
-   <input id="playerName" class="field" maxlength="16" placeholder="プレイヤー">
-  </label>
-  <div class="row">
-   <button id="toEditor" class="primary">車を描く・編集</button>
-   <button id="quickPlay">対戦ロビーへ</button>
+  <div class="panel">
+    <h1>CAR CLASH</h1>
+    <p class="sub">DRAW YOUR CAR. BUMP YOUR RIVALS.</p>
+    <p>自分で描いた車で、相手をステージの外へ押し出そう！</p>
+
+    <label>
+      プレイヤー名
+      <input
+        id="playerName"
+        class="field"
+        maxlength="16"
+        placeholder="プレイヤー"
+      >
+    </label>
+
+    <div class="row">
+      <button id="toEditor" class="primary">車を描く・編集</button>
+      <button id="quickPlay">対戦ロビーへ</button>
+    </div>
+
+    <p class="small">
+      オンライン対戦には別途ゲームサーバーが必要です。
+    </p>
   </div>
-  <p class="small">オンライン対戦には別途ゲームサーバーが必要です。</p>
- </div>
 </section>
 
 <section id="editor" class="screen hidden">
- <div class="panel">
-  <h2>🎨 MY CAR STUDIO</h2>
-  <p class="small">横向きの車を描こう！描くとインクを使います。消しゴムで消すと少し回復します。</p>
-  <canvas id="drawCanvas" width="800" height="450"></canvas>
-  <div class="row" style="margin-top:10px">
-   <b id="inkText">インク 100%</b>
-   <div id="inkTrack"><div id="inkFill"></div></div>
+  <div class="panel">
+    <h2>🎨 MY CAR STUDIO</h2>
+
+    <p class="small">
+      横向きの車を描こう！描くとインクを使います。
+      消しゴムで消すと少し回復します。
+    </p>
+
+    <canvas id="drawCanvas" width="800" height="450"></canvas>
+
+    <div class="row" style="margin-top:10px">
+      <b id="inkText">インク 100%</b>
+      <div id="inkTrack">
+        <div id="inkFill"></div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <button id="penBtn" class="primary">✏️ ペン</button>
+      <button id="eraserBtn">消しゴム</button>
+      <button id="clearBtn">全部消す</button>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <button id="backMenu">戻る</button>
+      <button id="saveCar" class="primary">この車で対戦！</button>
+    </div>
   </div>
-  <div class="row" style="margin-top:10px">
-   <button id="penBtn" class="primary">✏️ ペン</button>
-   <button id="eraserBtn">消しゴム</button>
-   <button id="clearBtn">全部消す</button>
-  </div>
-  <div class="row" style="margin-top:10px">
-   <button id="backMenu">戻る</button>
-   <button id="saveCar" class="primary">この車で対戦！</button>
-  </div>
- </div>
 </section>
 
 <section id="lobby" class="screen hidden">
- <div class="panel">
-  <h2>🌐 ONLINE ARENA</h2>
-  <p>同じサーバーに接続した人が同じアリーナに参加します。招待コードはありません。</p>
-  <label>ゲームサーバーURL
-   <input id="serverUrl" class="field" placeholder="https://あなたのサーバー.onrender.com">
-  </label>
-  <div class="row">
-   <button id="connect" class="primary">サーバーに接続</button>
-   <button id="backEditor">車を編集</button>
+  <div class="panel">
+    <h2>🌐 ONLINE ARENA</h2>
+
+    <p>
+      同じサーバーに接続した人が同じアリーナに参加します。
+      招待コードはありません。
+    </p>
+
+    <label>
+      ゲームサーバーURL
+      <input
+        id="serverUrl"
+        class="field"
+        placeholder="https://あなたのサーバー.onrender.com"
+      >
+    </label>
+
+    <div class="row">
+      <button id="connect" class="primary">サーバーに接続</button>
+      <button id="backEditor">車を編集</button>
+    </div>
+
+    <div id="status">
+      未接続：サーバーURLを入力してください。
+    </div>
+
+    <p class="small">
+      1人だけのときはCPUが3台参加します。
+      2人以上になるとCPUは退出します。
+    </p>
+
+    <button id="leaveLobby">タイトルへ戻る</button>
   </div>
-  <div id="status">未接続：サーバーURLを入力してください。</div>
-  <p class="small">1人だけのときはCPUが3台参加します。2人以上になるとCPUは退出します。</p>
-  <button id="leaveLobby">タイトルへ戻る</button>
- </div>
 </section>
 
 <section id="gameScreen" class="hidden">
- <canvas id="gameCanvas" width="1200" height="700"></canvas>
- <div id="hud">
-  <div class="hudbox" id="hudState">CAR CLASH</div>
-  <div class="hudbox" id="hudPlayers">接続待ち</div>
- </div>
- <div id="touchControls">
-  <div class="touchgroup">
-   <button class="touchbtn" data-input="left">◀</button>
-   <button class="touchbtn" data-input="right">▶</button>
+  <canvas id="gameCanvas" width="1200" height="700"></canvas>
+
+  <div id="hud">
+    <div class="hudbox" id="hudState">CAR CLASH</div>
+    <div class="hudbox" id="hudPlayers">接続待ち</div>
   </div>
-  <div class="touchgroup">
-   <button class="touchbtn" data-input="jump">⤒</button>
-   <button class="touchbtn boost" data-input="boost">BOOST</button>
+
+  <div id="touchControls">
+    <div class="touchgroup">
+      <button class="touchbtn" data-input="left">◀</button>
+      <button class="touchbtn" data-input="right">▶</button>
+    </div>
+
+    <div class="touchgroup">
+      <button class="touchbtn" data-input="jump">⤒</button>
+      <button class="touchbtn boost" data-input="boost">BOOST</button>
+    </div>
   </div>
- </div>
- <div id="result" class="hidden">
-  <div class="panel">
-   <h2 id="resultTitle">WINNER!</h2>
-   <p id="resultText"></p>
-   <button id="again" class="primary">ロビーに戻る</button>
+
+  <div id="result" class="hidden">
+    <div class="panel">
+      <h2 id="resultTitle">WINNER!</h2>
+      <p id="resultText"></p>
+      <button id="again" class="primary">ロビーに戻る</button>
+    </div>
   </div>
- </div>
 </section>
+
 </div>
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
 <script>
 (()=>{
-const $=id=>document.getElementById(id);
-const screens=['menu','editor','lobby'];
+"use strict";
+
+const $ = id => document.getElementById(id);
+
+const screens = ["menu","editor","lobby"];
 
 function show(id){
- screens.forEach(s=>$(s).classList.toggle('hidden',s!==id));
- $('gameScreen').classList.toggle('hidden',id!=='gameScreen');
+  screens.forEach(s=>{
+    $(s).classList.toggle("hidden",s!==id);
+  });
+
+  $("gameScreen").classList.toggle(
+    "hidden",
+    id!=="gameScreen"
+  );
 }
 
-let savedCar='',ink=100,tool='pen',drawing=false,last=null;
-let socket=null,myId=null,gameOver=false;
+let savedCar = "";
+let ink = 100;
+let tool = "pen";
+let drawing = false;
+let last = null;
 
-const dc=$('drawCanvas');
-const dctx=dc.getContext('2d');
+let socket = null;
+let myId = null;
+let gameOver = false;
+
+const dc = $("drawCanvas");
+const dctx = dc.getContext("2d");
 
 function baseCanvas(){
- dctx.clearRect(0,0,dc.width,dc.height);
+  dctx.clearRect(0,0,dc.width,dc.height);
 }
+
 baseCanvas();
 
 function setInk(v){
- ink=Math.max(0,Math.min(100,v));
- $('inkText').textContent='インク '+Math.round(ink)+'%';
- $('inkFill').style.width=ink+'%';
- $('inkFill').style.background=ink<20?'#ff6868':'linear-gradient(90deg,#63e6b3,#ffdc72)';
+  ink = Math.max(0,Math.min(100,v));
+
+  $("inkText").textContent =
+    "インク "+Math.round(ink)+"%";
+
+  $("inkFill").style.width = ink+"%";
+
+  $("inkFill").style.background =
+    ink<20
+      ? "#ff6868"
+      : "linear-gradient(90deg,#63e6b3,#ffdc72)";
 }
 
 function pointerPos(e){
- const r=dc.getBoundingClientRect();
- return {
-  x:(e.clientX-r.left)*dc.width/r.width,
-  y:(e.clientY-r.top)*dc.height/r.height
- };
+  const r = dc.getBoundingClientRect();
+
+  return {
+    x:(e.clientX-r.left)*dc.width/r.width,
+    y:(e.clientY-r.top)*dc.height/r.height
+  };
 }
 
-dc.addEventListener('pointerdown',e=>{
- e.preventDefault();
- drawing=true;
- dc.setPointerCapture(e.pointerId);
- last=pointerPos(e);
+// お絵描き
+dc.addEventListener("pointerdown",e=>{
+  e.preventDefault();
+
+  drawing = true;
+
+  try{
+    dc.setPointerCapture(e.pointerId);
+  }catch(_){}
+
+  last = pointerPos(e);
 });
 
-dc.addEventListener('pointermove',e=>{
- if(!drawing)return;
- e.preventDefault();
+dc.addEventListener("pointermove",e=>{
+  if(!drawing) return;
 
- const p=pointerPos(e);
- const dist=Math.hypot(p.x-last.x,p.y-last.y);
+  e.preventDefault();
 
- if(tool==='pen'&&ink<=0){
-  last=p;
-  return;
- }
+  const p = pointerPos(e);
+  const dist = Math.hypot(
+    p.x-last.x,
+    p.y-last.y
+  );
 
- dctx.save();
- dctx.lineCap='round';
- dctx.lineJoin='round';
- dctx.lineWidth=tool==='pen'?22:42;
+  if(tool==="pen" && ink<=0){
+    last = p;
+    return;
+  }
 
- if(tool==='eraser'){
-  dctx.globalCompositeOperation='destination-out';
-  setInk(ink+dist*.055);
- }else{
-  dctx.globalCompositeOperation='source-over';
-  dctx.strokeStyle='#172b43';
-  setInk(ink-dist*.045);
- }
+  dctx.save();
 
- dctx.beginPath();
- dctx.moveTo(last.x,last.y);
- dctx.lineTo(p.x,p.y);
- dctx.stroke();
- dctx.restore();
- last=p;
+  dctx.lineCap = "round";
+  dctx.lineJoin = "round";
+  dctx.lineWidth = tool==="pen" ? 22 : 42;
+
+  if(tool==="eraser"){
+    dctx.globalCompositeOperation = "destination-out";
+    setInk(ink+dist*0.055);
+  }else{
+    dctx.globalCompositeOperation = "source-over";
+    dctx.strokeStyle = "#172b43";
+    setInk(ink-dist*0.045);
+  }
+
+  dctx.beginPath();
+  dctx.moveTo(last.x,last.y);
+  dctx.lineTo(p.x,p.y);
+  dctx.stroke();
+
+  dctx.restore();
+
+  last = p;
 });
 
-['pointerup','pointercancel','lostpointercapture'].forEach(ev=>{
- dc.addEventListener(ev,()=>{
-  drawing=false;
-  last=null;
- });
+function stopDrawing(){
+  drawing = false;
+  last = null;
+}
+
+["pointerup","pointercancel","lostpointercapture"].forEach(ev=>{
+  dc.addEventListener(ev,stopDrawing);
 });
 
-$('penBtn').onclick=()=>{
- tool='pen';
- $('penBtn').classList.add('primary');
- $('eraserBtn').classList.remove('primary');
+$("penBtn").onclick = ()=>{
+  tool = "pen";
+
+  $("penBtn").classList.add("primary");
+  $("eraserBtn").classList.remove("primary");
 };
 
-$('eraserBtn').onclick=()=>{
- tool='eraser';
- $('eraserBtn').classList.add('primary');
- $('penBtn').classList.remove('primary');
+$("eraserBtn").onclick = ()=>{
+  tool = "eraser";
+
+  $("eraserBtn").classList.add("primary");
+  $("penBtn").classList.remove("primary");
 };
 
-$('clearBtn').onclick=()=>{
- baseCanvas();
- setInk(100);
+$("clearBtn").onclick = ()=>{
+  baseCanvas();
+  setInk(100);
 };
 
+// 車画像を軽量化して保存
 function carImage(){
- return dc.toDataURL('image/png');
+  const c = document.createElement("canvas");
+
+  c.width = 400;
+  c.height = 225;
+
+  const ctx = c.getContext("2d");
+
+  ctx.clearRect(0,0,c.width,c.height);
+  ctx.drawImage(dc,0,0,400,225);
+
+  // 透過を保てるWebPを優先
+  const qualities = [0.65,0.5,0.35];
+
+  for(const quality of qualities){
+    const result = c.toDataURL("image/webp",quality);
+
+    if(
+      result.startsWith("data:image/webp") &&
+      result.length < 180000
+    ){
+      return result;
+    }
+  }
+
+  // WebP非対応の場合のPNG
+  return c.toDataURL("image/png");
 }
 
-$('toEditor').onclick=()=>show('editor');
-$('backMenu').onclick=()=>show('menu');
+$("toEditor").onclick = ()=>show("editor");
+$("backMenu").onclick = ()=>show("menu");
 
-$('saveCar').onclick=()=>{
- savedCar=carImage();
- show('lobby');
+$("saveCar").onclick = ()=>{
+  savedCar = carImage();
+  show("lobby");
 };
 
-$('quickPlay').onclick=()=>{
- if(!savedCar)savedCar=carImage();
- show('lobby');
+$("quickPlay").onclick = ()=>{
+  if(!savedCar){
+    savedCar = carImage();
+  }
+
+  show("lobby");
 };
 
-$('backEditor').onclick=()=>show('editor');
+$("backEditor").onclick = ()=>show("editor");
 
-$('leaveLobby').onclick=()=>{
- if(socket){
-  socket.disconnect();
-  socket=null;
- }
- show('menu');
+$("leaveLobby").onclick = ()=>{
+  if(socket){
+    socket.disconnect();
+    socket = null;
+  }
+
+  show("menu");
 };
 
-$('again').onclick=()=>{
- $('result').classList.add('hidden');
- show('lobby');
- if(socket?.connected)socket.emit('ready');
-};
-
+// 接続状態
 function status(t){
- $('status').textContent=t;
+  $("status").textContent = t;
 }
 
 function connect(){
- const url=$('serverUrl').value.trim().replace(/\/+$/,'');
+  const url = $("serverUrl").value
+    .trim()
+    .replace(/\/+$/,"");
 
- if(!url){
-  status('サーバーURLを入力してください。');
-  return;
- }
+  if(!url){
+    status("サーバーURLを入力してください。");
+    return;
+  }
 
- if(typeof io==='undefined'){
-  status('通信ライブラリを読み込めません。ネット接続を確認してください。');
-  return;
- }
+  if(typeof io==="undefined"){
+    status("通信ライブラリを読み込めません。ネット接続を確認してください。");
+    return;
+  }
 
- if(socket)socket.disconnect();
+  if(socket){
+    socket.disconnect();
+    socket = null;
+  }
 
- status('サーバーに接続中…');
+  status("サーバーに接続中…");
 
- socket=io(url,{
-  transports:['websocket','polling'],
-  timeout:12000,
-  reconnection:true
- });
+  // 前回の画像データをリセット
+  for(const id of Object.keys(carCache)){
+    delete carCache[id];
+  }
 
- socket.on('connect',()=>{
-  myId=socket.id;
-  gameOver=false;
-  status('接続成功！アリーナに参加しています。');
-
-  socket.emit('join',{
-   name:$('playerName').value.trim()||'PLAYER',
-   car:savedCar||carImage()
+  socket = io(url,{
+    transports:["websocket","polling"],
+    timeout:12000,
+    reconnection:true
   });
 
-  show('gameScreen');
- });
+  socket.on("connect",()=>{
+    myId = socket.id;
+    gameOver = false;
 
- socket.on('connect_error',()=>{
-  status('接続できません。サーバーが起動中か、URLを確認してください。');
- });
+    status("接続成功！アリーナに参加しています。");
 
- socket.on('disconnect',()=>{
-  if(!gameOver)status('接続が切れました。再接続を試しています…');
- });
+    socket.emit("join",{
+      name:$("playerName").value.trim() || "PLAYER",
+      car:savedCar || carImage()
+    });
 
- socket.on('joined',d=>{
-  myId=d.id;
- });
+    show("gameScreen");
+  });
 
- socket.on('state',s=>{
-  drawGame(s);
- });
+  socket.on("connect_error",()=>{
+    status("接続できません。サーバーが起動中か、URLを確認してください。");
+  });
 
- socket.on('matchEnd',d=>{
-  gameOver=true;
-  $('resultTitle').textContent=d.winnerId===myId?'🏆 YOU WIN!':'BATTLE OVER';
-  $('resultText').textContent=d.message||'対戦終了！';
-  $('result').classList.remove('hidden');
- });
+  socket.on("disconnect",()=>{
+    releaseAllInputs();
 
- socket.on('message',m=>status(m.text));
+    if(!gameOver){
+      status("接続が切れました。再接続を試しています…");
+    }
+  });
+
+  socket.on("joined",d=>{
+    myId = d.id;
+  });
+
+  // 車画像は状態通信と分けて受け取る
+  socket.on("carUpdate",data=>{
+    if(!data || !data.id || typeof data.car!=="string"){
+      return;
+    }
+
+    const im = new Image();
+
+    im.onload = ()=>{
+      carCache[data.id] = im;
+    };
+
+    im.src = data.car;
+  });
+
+  socket.on("carRemove",data=>{
+    if(data && data.id){
+      delete carCache[data.id];
+    }
+  });
+
+  socket.on("state",s=>{
+    if(!s || !Array.isArray(s.players)) return;
+
+    receiveState(s);
+  });
+
+  socket.on("matchEnd",d=>{
+    gameOver = true;
+
+    $("resultTitle").textContent =
+      d.winnerId===myId
+        ? "🏆 YOU WIN!"
+        : "BATTLE OVER";
+
+    $("resultText").textContent =
+      d.message || "対戦終了！";
+
+    $("result").classList.remove("hidden");
+  });
+
+  socket.on("message",m=>{
+    status(m.text || "サーバーからメッセージが届きました。");
+  });
 }
 
-$('connect').onclick=connect;
+$("connect").onclick = connect;
 
-let input={
- left:false,
- right:false,
- jump:false,
- boost:false
+// 操作入力
+let input = {
+  left:false,
+  right:false,
+  jump:false,
+  boost:false
 };
 
 function sendInput(){
- if(socket?.connected)socket.emit('input',input);
+  if(socket && socket.connected){
+    socket.emit("input",input);
+  }
 }
 
-document.querySelectorAll('[data-input]').forEach(b=>{
- const k=b.dataset.input;
+function releaseAllInputs(){
+  input.left = false;
+  input.right = false;
+  input.jump = false;
+  input.boost = false;
 
- const down=e=>{
-  e.preventDefault();
-  input[k]=true;
   sendInput();
- };
+}
 
- const up=e=>{
-  e.preventDefault();
-  input[k]=false;
-  sendInput();
- };
+document.querySelectorAll("[data-input]").forEach(b=>{
+  const k = b.dataset.input;
 
- b.addEventListener('pointerdown',down);
+  b.addEventListener("pointerdown",e=>{
+    e.preventDefault();
 
- ['pointerup','pointercancel','pointerleave'].forEach(ev=>{
-  b.addEventListener(ev,up);
- });
+    try{
+      b.setPointerCapture(e.pointerId);
+    }catch(_){}
+
+    input[k] = true;
+    sendInput();
+  });
+
+  const up = e=>{
+    e.preventDefault();
+
+    input[k] = false;
+    sendInput();
+  };
+
+  b.addEventListener("pointerup",up);
+  b.addEventListener("pointercancel",up);
+  b.addEventListener("lostpointercapture",up);
 });
 
-let bg=new Image();
-bg.src='city.JPG';
-let bgReady=false;
-bg.onload=()=>bgReady=true;
+// アプリ切り替え・フォーカス喪失時に操作を解除
+window.addEventListener("blur",releaseAllInputs);
 
-const gc=$('gameCanvas');
-const g=gc.getContext('2d');
-const carCache={};
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){
+    releaseAllInputs();
+  }
+});
 
-function drawGame(s){
- g.clearRect(0,0,1200,700);
+// 再戦
+$("again").onclick = ()=>{
+  $("result").classList.add("hidden");
+  show("lobby");
 
- if(bgReady){
-  g.drawImage(bg,0,0,1200,500);
- }else{
-  let gr=g.createLinearGradient(0,0,0,500);
-  gr.addColorStop(0,'#83c9e9');
-  gr.addColorStop(1,'#d9e9ee');
-  g.fillStyle=gr;
-  g.fillRect(0,0,1200,500);
- }
+  if(socket && socket.connected){
+    socket.emit("ready");
+  }
+};
 
- // ステージの道路
- g.fillStyle='#46515b';
- g.fillRect(0,500,1200,200);
+// 背景
+const bg = new Image();
+bg.src = "city.JPG";
 
- g.fillStyle='#e6d4a5';
- g.fillRect(0,500,1200,12);
+let bgReady = false;
 
- g.fillStyle='#f8e6a8';
- for(let x=40;x<1200;x+=150){
-  g.fillRect(x,600,75,7);
- }
+bg.onload = ()=>{
+  bgReady = true;
+};
 
- g.fillStyle='#263746';
- g.fillRect(0,512,1200,8);
+// ゲーム画面
+const gc = $("gameCanvas");
+const g = gc.getContext("2d");
 
- g.fillStyle='#fff';
- g.font='bold 16px sans-serif';
- g.fillText('ARENA STREET',24,540);
+const carCache = {};
 
- (s.players||[]).forEach(p=>{
-  if(!p.alive)return;
+// 状態の補間用
+let previousState = null;
+let currentState = null;
+let stateReceivedAt = 0;
 
+function receiveState(s){
+  previousState = currentState || s;
+  currentState = s;
+  stateReceivedAt = performance.now();
+}
+
+// 2つの状態の間を滑らかに補間
+function getSmoothState(now){
+  if(!currentState) return null;
+
+  if(!previousState) return currentState;
+
+  const alpha = Math.max(
+    0,
+    Math.min(1,(now-stateReceivedAt)/100)
+  );
+
+  const oldPlayers = new Map();
+
+  for(const p of previousState.players || []){
+    oldPlayers.set(p.id,p);
+  }
+
+  const players = currentState.players.map(p=>{
+    const old = oldPlayers.get(p.id);
+
+    if(!old){
+      return p;
+    }
+
+    return {
+      ...p,
+      x:old.x+(p.x-old.x)*alpha,
+      y:old.y+(p.y-old.y)*alpha
+    };
+  });
+
+  return {
+    ...currentState,
+    players
+  };
+}
+
+// 背景とステージ
+function drawBackground(){
+  g.clearRect(0,0,1200,700);
+
+  if(bgReady){
+    g.drawImage(bg,0,0,1200,500);
+  }else{
+    const gr = g.createLinearGradient(0,0,0,500);
+
+    gr.addColorStop(0,"#83c9e9");
+    gr.addColorStop(1,"#d9e9ee");
+
+    g.fillStyle = gr;
+    g.fillRect(0,0,1200,500);
+  }
+
+  // 道路
+  g.fillStyle = "#46515b";
+  g.fillRect(0,500,1200,200);
+
+  g.fillStyle = "#e6d4a5";
+  g.fillRect(0,500,1200,12);
+
+  g.fillStyle = "#f8e6a8";
+
+  for(let x=40;x<1200;x+=150){
+    g.fillRect(x,600,75,7);
+  }
+
+  g.fillStyle = "#263746";
+  g.fillRect(0,512,1200,8);
+
+  g.fillStyle = "#fff";
+  g.font = "bold 16px sans-serif";
+  g.textAlign = "left";
+  g.fillText("ARENA STREET",24,540);
+}
+
+// 車
+function drawCar(p){
   g.save();
+
   g.translate(p.x,p.y);
 
-  if(p.facing<0)g.scale(-1,1);
+  if(p.facing<0){
+    g.scale(-1,1);
+  }
 
   // タイヤ
-  g.fillStyle='#171c25';
+  g.fillStyle = "#171c25";
+
   g.beginPath();
   g.arc(-25,12,15,0,Math.PI*2);
   g.arc(26,12,15,0,Math.PI*2);
   g.fill();
 
-  g.fillStyle='#c8d7e5';
+  // ホイール
+  g.fillStyle = "#c8d7e5";
+
   g.beginPath();
   g.arc(-25,12,6,0,Math.PI*2);
   g.arc(26,12,6,0,Math.PI*2);
   g.fill();
 
   // 描いた車
-  if(p.car){
-   let im=carCache[p.id];
+  const im = carCache[p.id];
 
-   if(!im){
-    im=new Image();
-    im.src=p.car;
-    carCache[p.id]=im;
-   }
-
-   if(im.complete&&im.naturalWidth){
+  if(im && im.complete && im.naturalWidth){
     g.drawImage(im,-52,-49,104,58);
-   }
   }else{
-   g.fillStyle=p.color||'#f5b84a';
-   g.fillRect(-48,-28,96,38);
-   g.fillStyle='#d5efff';
-   g.fillRect(-15,-48,38,24);
+    // 画像読み込み前・CPU用の車
+    g.fillStyle = p.color || "#f5b84a";
+    g.fillRect(-48,-28,96,38);
+
+    g.fillStyle = "#d5efff";
+    g.fillRect(-15,-48,38,24);
   }
 
   g.restore();
-
-  // 名前
-  g.fillStyle='#102036';
-  g.fillRect(p.x-34,p.y-65,68,7);
-
-  g.fillStyle=p.human?'#7ce5ee':'#ffd36c';
-  g.fillRect(p.x-34,p.y-65,68,7);
-
-  g.fillStyle='#fff';
-  g.font='bold 15px sans-serif';
-  g.textAlign='center';
-  g.fillText(p.name,p.x,p.y-75);
- });
-
- $('hudState').textContent=s.status||'BUMP! STAY ON THE STREET';
-
- $('hudPlayers').textContent=
-  '参加 '+(s.players||[]).filter(p=>p.human).length+
-  '人 / 残り '+(s.players||[]).filter(p=>p.alive).length+'台';
 }
+
+// プレイヤー名
+function drawPlayerName(p){
+  g.fillStyle = "#102036";
+  g.fillRect(p.x-34,p.y-65,68,7);
+
+  g.fillStyle = p.human ? "#7ce5ee" : "#ffd36c";
+  g.fillRect(p.x-34,p.y-65,68,7);
+
+  g.fillStyle = "#fff";
+  g.font = "bold 15px sans-serif";
+  g.textAlign = "center";
+
+  g.fillText(p.name,p.x,p.y-75);
+}
+
+// ゲーム全体を描画
+function drawGame(s){
+  drawBackground();
+
+  for(const p of s.players || []){
+    if(!p.alive) continue;
+
+    drawCar(p);
+    drawPlayerName(p);
+  }
+
+  $("hudState").textContent =
+    s.status || "BUMP! STAY ON THE STREET";
+
+  $("hudPlayers").textContent =
+    "参加 "+
+    (s.players || []).filter(p=>p.human).length+
+    "人 / 残り "+
+    (s.players || []).filter(p=>p.alive).length+
+    "台";
+}
+
+// 画面描画を毎フレーム実行
+function renderLoop(now){
+  if(currentState && !$("gameScreen").classList.contains("hidden")){
+    const smoothState = getSmoothState(now);
+
+    if(smoothState){
+      drawGame(smoothState);
+    }
+  }
+
+  requestAnimationFrame(renderLoop);
+}
+
+requestAnimationFrame(renderLoop);
+
 })();
 </script>
 </body>
