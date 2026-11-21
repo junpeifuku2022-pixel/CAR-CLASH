@@ -1,8 +1,8 @@
 
 const express = require("express");
 const http = require("http");
-const { Server } = require("socket.io");
 const path = require("path");
+const { Server } = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
@@ -12,18 +12,27 @@ const io = new Server(server, {
     origin: "*",
     methods: ["GET", "POST"]
   },
-  maxHttpBufferSize: 2e6
+  maxHttpBufferSize: 500000,
+  perMessageDeflate: false,
+  pingInterval: 25000,
+  pingTimeout: 20000
 });
 
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, game: "CAR CLASH" });
+  res.json({ ok: true, game: "CAR CLASH", mode: "LIGHT" });
 });
 
 const players = new Map();
 
-const botNames = [
+const W = 1200;
+const FLOOR = 500;
+
+const FPS = 20;
+const BROADCAST_INTERVAL = 2;
+
+const BOT_NAMES = [
   "TURBO CAT",
   "CITY RACER",
   "PON PON",
@@ -32,14 +41,18 @@ const botNames = [
   "NIGHT TAXI"
 ];
 
-const W = 1200;
-const FLOOR = 500;
+const COLORS = [
+  "#f5b84a",
+  "#63c8dc",
+  "#ef8b91",
+  "#9ed17b"
+];
 
 let tick = 0;
 let matchEnded = false;
 let endTimer = null;
 
-function makePlayer(id, data, human) {
+function makePlayer(id, data = {}, human = true) {
   return {
     id,
     name: String(data.name || "PLAYER").slice(0, 16),
@@ -62,14 +75,7 @@ function makePlayer(id, data, human) {
     facing: Math.random() < 0.5 ? -1 : 1,
 
     alive: true,
-    lives: 1,
-
-    color: [
-      "#f5b84a",
-      "#63c8dc",
-      "#ef8b91",
-      "#9ed17b"
-    ][Math.floor(Math.random() * 4)],
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
 
     input: {
       left: false,
@@ -80,8 +86,7 @@ function makePlayer(id, data, human) {
 
     onGround: true,
     hitCooldown: 0,
-    jumpLock: false,
-    aiThink: 0
+    jumpLock: false
   };
 }
 
@@ -93,69 +98,83 @@ function bots() {
   return [...players.values()].filter(p => !p.human);
 }
 
-function broadcast(statusText = "BUMP! STAY ON THE STREET") {
-  io.emit("state", {
-    players: [...players.values()].map(p => ({
-      id: p.id,
-      name: p.name,
-      car: p.car,
-      x: p.x,
-      y: p.y,
-      facing: p.facing,
-      alive: p.alive,
-      human: p.human,
-      color: p.color
-    })),
-    status: statusText
-  });
-}
-
+// CPUは1人のときだけ3台
 function syncBots() {
   const hs = humans();
 
-  for (const b of bots()) {
-    players.delete(b.id);
-  }
-
   if (hs.length === 1) {
-    for (let i = 0; i < 3; i++) {
-      const id = "cpu-" + i;
+    if (bots().length === 3) return;
 
+    for (const b of bots()) {
+      players.delete(b.id);
+    }
+
+    for (let i = 0; i < 3; i++) {
       const b = makePlayer(
-        id,
+        "cpu-" + i,
         {
-          name: botNames[(tick + i) % botNames.length]
+          name: BOT_NAMES[i]
         },
         false
       );
 
       b.x = 300 + i * 260;
+      b.color = COLORS[i];
 
-      b.color = [
-        "#f5b84a",
-        "#65c9dc",
-        "#ef8b91"
-      ][i];
-
-      players.set(id, b);
+      players.set(b.id, b);
+    }
+  } else {
+    for (const b of bots()) {
+      players.delete(b.id);
     }
   }
+}
+
+function broadcast(status = "BUMP! STAY ON THE STREET") {
+  const state = {
+    players: [...players.values()].map(p => ({
+      id: p.id,
+      name: p.name,
+      car: p.car,
+      x: Math.round(p.x * 10) / 10,
+      y: Math.round(p.y * 10) / 10,
+      facing: p.facing,
+      alive: p.alive,
+      human: p.human,
+      color: p.color
+    })),
+    status
+  };
+
+  io.volatile.emit("state", state);
 }
 
 function resetMatch() {
   matchEnded = false;
 
+  syncBots();
+
   for (const p of players.values()) {
     p.x = 100 + Math.random() * 1000;
     p.y = FLOOR - 36;
+
     p.vx = 0;
     p.vy = 0;
+
     p.alive = true;
-    p.lives = 1;
     p.hitCooldown = 0;
+    p.jumpLock = false;
+    p.onGround = true;
+
+    p.input = {
+      left: false,
+      right: false,
+      jump: false,
+      boost: false
+    };
   }
 
-  syncBots();
+  broadcast("NEW MATCH!");
 }
 
 function endMatch(winner) {
@@ -163,13 +182,11 @@ function endMatch(winner) {
 
   matchEnded = true;
 
-  const msg = winner
-    ? `${winner.name} の勝利！`
-    : "全員が脱落しました。";
-
   io.emit("matchEnd", {
-    winnerId: winner?.id || null,
-    message: msg
+    winnerId: winner ? winner.id : null,
+    message: winner
+      ? `${winner.name} の勝利！`
+      : "全員が脱落しました。"
   });
 
   clearTimeout(endTimer);
@@ -183,9 +200,11 @@ io.on("connection", socket => {
 
   socket.on("join", data => {
 
+    if (players.has(socket.id)) return;
+
     if (humans().length >= 8) {
       socket.emit("message", {
-        text: "満員です。少し待ってから接続してください。"
+        text: "満員です。"
       });
       return;
     }
@@ -208,27 +227,24 @@ io.on("connection", socket => {
   });
 
   socket.on("input", data => {
-
     const p = players.get(socket.id);
 
-    if (!p || !p.alive || !data) return;
+    if (!p || !p.alive || !data || matchEnded) return;
 
-    for (const k of [
-      "left",
-      "right",
-      "jump",
-      "boost"
-    ]) {
-      p.input[k] = !!data[k];
-    }
+    p.input.left = data.left === true;
+    p.input.right = data.right === true;
+    p.input.jump = data.jump === true;
+    p.input.boost = data.boost === true;
   });
 
   socket.on("ready", () => {
-    if (matchEnded) resetMatch();
+    if (matchEnded) {
+      clearTimeout(endTimer);
+      resetMatch();
+    }
   });
 
   socket.on("disconnect", () => {
-
     players.delete(socket.id);
 
     syncBots();
@@ -238,23 +254,42 @@ io.on("connection", socket => {
     const alive = [...players.values()]
       .filter(p => p.alive);
 
-    if (alive.length === 1 && humans().length > 0) {
+    if (
+      alive.length === 1 &&
+      humans().length > 0
+    ) {
       endMatch(alive[0]);
     }
   });
 });
 
-function step() {
+// CPUの最短ターゲットを直接探す
+function findTarget(p, all) {
+  let target = null;
+  let minDistance = Infinity;
 
+  for (const q of all) {
+    if (q.id === p.id || !q.alive) continue;
+
+    const d = Math.abs(q.x - p.x);
+
+    if (d < minDistance) {
+      minDistance = d;
+      target = q;
+    }
+  }
+
+  return target;
+}
+
+function step() {
   tick++;
 
   const all = [...players.values()];
-  const hs = humans();
 
-  if (hs.length !== 1 && bots().length) {
-    syncBots();
-  }
+  if (matchEnded) return;
 
+  // 移動・AI
   for (const p of all) {
 
     if (!p.alive) continue;
@@ -263,31 +298,23 @@ function step() {
       p.hitCooldown--;
     }
 
-    // CPUの行動
+    // CPU
     if (!p.human) {
-
-      const targets = all.filter(q =>
-        q.id !== p.id && q.alive
-      );
-
-      const target = targets.sort((a, b) =>
-        Math.abs(a.x - p.x) -
-        Math.abs(b.x - p.x)
-      )[0];
+      const target = findTarget(p, all);
 
       if (target) {
+        const dx = target.x - p.x;
 
-        p.input.left = target.x < p.x - 30;
-        p.input.right = target.x > p.x + 30;
+        p.input.left = dx < -30;
+        p.input.right = dx > 30;
 
         p.input.boost =
-          Math.abs(target.x - p.x) > 170 &&
-          Math.random() < 0.85;
+          Math.abs(dx) > 200;
 
         p.input.jump =
-          Math.abs(target.x - p.x) < 115 &&
+          Math.abs(dx) < 110 &&
           p.onGround &&
-          Math.random() < 0.035;
+          tick % 35 === 0;
       }
     }
 
@@ -296,18 +323,18 @@ function step() {
       (p.input.right ? 1 : 0) -
       (p.input.left ? 1 : 0);
 
-    if (dir) {
+    if (dir !== 0) {
       p.vx += dir * (p.input.boost ? 0.72 : 0.42);
       p.facing = dir;
     } else {
       p.vx *= 0.94;
     }
 
-    const max = p.input.boost ? 10 : 6.3;
+    const maxSpeed = p.input.boost ? 10 : 6.3;
 
     p.vx = Math.max(
-      -max,
-      Math.min(max, p.vx)
+      -maxSpeed,
+      Math.min(maxSpeed, p.vx)
     );
 
     // ジャンプ
@@ -337,7 +364,7 @@ function step() {
       p.onGround = true;
     }
 
-    // ステージ外へ落下
+    // 脱落
     if (
       p.x < -70 ||
       p.x > W + 70 ||
@@ -345,34 +372,35 @@ function step() {
     ) {
       p.alive = false;
       p.vx = 0;
+      p.vy = 0;
     }
   }
 
   // 車同士の衝突
   for (let i = 0; i < all.length; i++) {
-    for (let j = i + 1; j < all.length; j++) {
+    const a = all[i];
 
-      const a = all[i];
+    if (!a.alive) continue;
+
+    for (let j = i + 1; j < all.length; j++) {
       const b = all[j];
 
-      if (!a.alive || !b.alive) continue;
+      if (!b.alive) continue;
 
       if (
         Math.abs(a.x - b.x) < 78 &&
         Math.abs(a.y - b.y) < 55
       ) {
-
-        const sign = a.x <= b.x ? -1 : 1;
-
-        const impact = Math.max(
-          2.5,
-          Math.abs(a.vx - b.vx) * 0.75 + 2
-        );
-
         if (
           a.hitCooldown === 0 ||
           b.hitCooldown === 0
         ) {
+          const sign = a.x <= b.x ? -1 : 1;
+
+          const impact = Math.max(
+            2.5,
+            Math.abs(a.vx - b.vx) * 0.75 + 2
+          );
 
           a.vx += sign * impact * 0.72;
           b.vx -= sign * impact * 0.72;
@@ -394,31 +422,22 @@ function step() {
 
   const alive = all.filter(p => p.alive);
 
-  if (
-    !matchEnded &&
-    alive.length === 1 &&
-    humans().length > 0
-  ) {
-    endMatch(alive[0]);
+  if (alive.length <= 1 && humans().length > 0) {
+    endMatch(alive[0] || null);
   }
 
-  if (
-    !matchEnded &&
-    alive.length === 0 &&
-    humans().length > 0
-  ) {
-    endMatch(null);
-  }
-
-  if (tick % 2 === 0) {
+  // 通信は10回/秒
+  if (tick % BROADCAST_INTERVAL === 0) {
     broadcast();
   }
 }
 
-setInterval(step, 1000 / 30);
+// 20回/秒
+setInterval(step, 1000 / FPS);
 
 const port = process.env.PORT || 3000;
 
 server.listen(port, () => {
-  console.log(`CAR CLASH server listening on ${port}`);
+  console.log("CAR CLASH LIGHT SERVER READY");
+  console.log("Port:", port);
 });
