@@ -1,4 +1,3 @@
-
 const express = require("express");
 const http = require("http");
 const path = require("path");
@@ -18,10 +17,15 @@ const io = new Server(server, {
   pingTimeout: 20000
 });
 
+// publicフォルダ内のファイルを公開
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, game: "CAR CLASH", mode: "LIGHT" });
+  res.json({
+    ok: true,
+    game: "CAR CLASH",
+    mode: "LIGHT"
+  });
 });
 
 const players = new Map();
@@ -53,17 +57,17 @@ let matchEnded = false;
 let endTimer = null;
 
 function makePlayer(id, data = {}, human = true) {
+  const car =
+    typeof data.car === "string" &&
+    data.car.startsWith("data:image/") &&
+    data.car.length < 180000
+      ? data.car
+      : "";
+
   return {
     id,
     name: String(data.name || "PLAYER").slice(0, 16),
-
-    car:
-      typeof data.car === "string" &&
-      data.car.startsWith("data:image/") &&
-      data.car.length < 180000
-        ? data.car
-        : "",
-
+    car,
     human,
 
     x: 150 + Math.random() * 900,
@@ -98,14 +102,16 @@ function bots() {
   return [...players.values()].filter(p => !p.human);
 }
 
-// CPUは1人のときだけ3台
+// CPUは人間が1人のときだけ3台
 function syncBots() {
   const hs = humans();
 
   if (hs.length === 1) {
-    if (bots().length === 3) return;
+    const currentBots = bots();
 
-    for (const b of bots()) {
+    if (currentBots.length === 3) return;
+
+    for (const b of currentBots) {
       players.delete(b.id);
     }
 
@@ -130,12 +136,12 @@ function syncBots() {
   }
 }
 
+// 車画像を含めない軽量な状態通信
 function broadcast(status = "BUMP! STAY ON THE STREET") {
   const state = {
     players: [...players.values()].map(p => ({
       id: p.id,
       name: p.name,
-      car: p.car,
       x: Math.round(p.x * 10) / 10,
       y: Math.round(p.y * 10) / 10,
       facing: p.facing,
@@ -151,6 +157,9 @@ function broadcast(status = "BUMP! STAY ON THE STREET") {
 
 function resetMatch() {
   matchEnded = false;
+
+  clearTimeout(endTimer);
+  endTimer = null;
 
   syncBots();
 
@@ -198,8 +207,8 @@ function endMatch(winner) {
 
 io.on("connection", socket => {
 
+  // 参加
   socket.on("join", data => {
-
     if (players.has(socket.id)) return;
 
     if (humans().length >= 8) {
@@ -208,6 +217,14 @@ io.on("connection", socket => {
       });
       return;
     }
+
+    // 参加前のプレイヤーの車画像を記録
+    const existingCars = [...players.values()]
+      .filter(p => p.car)
+      .map(p => ({
+        id: p.id,
+        car: p.car
+      }));
 
     const p = makePlayer(
       socket.id,
@@ -219,6 +236,19 @@ io.on("connection", socket => {
 
     syncBots();
 
+    // 新しく参加した人に、先にいる人の車画像を送る
+    for (const item of existingCars) {
+      socket.emit("carUpdate", item);
+    }
+
+    // 新しい人の車画像を全員に送る
+    if (p.car) {
+      io.emit("carUpdate", {
+        id: p.id,
+        car: p.car
+      });
+    }
+
     socket.emit("joined", {
       id: socket.id
     });
@@ -226,6 +256,7 @@ io.on("connection", socket => {
     broadcast(`${p.name} が参戦！`);
   });
 
+  // 操作入力
   socket.on("input", data => {
     const p = players.get(socket.id);
 
@@ -237,15 +268,21 @@ io.on("connection", socket => {
     p.input.boost = data.boost === true;
   });
 
+  // 再戦
   socket.on("ready", () => {
     if (matchEnded) {
-      clearTimeout(endTimer);
       resetMatch();
     }
   });
 
+  // 退出
   socket.on("disconnect", () => {
     players.delete(socket.id);
+
+    // 退出した人の車画像を全員の画面から削除
+    io.emit("carRemove", {
+      id: socket.id
+    });
 
     syncBots();
 
@@ -263,7 +300,7 @@ io.on("connection", socket => {
   });
 });
 
-// CPUの最短ターゲットを直接探す
+// CPUのターゲットを探す
 function findTarget(p, all) {
   let target = null;
   let minDistance = Infinity;
@@ -282,23 +319,23 @@ function findTarget(p, all) {
   return target;
 }
 
+// ゲームの物理処理
 function step() {
   tick++;
 
-  const all = [...players.values()];
-
   if (matchEnded) return;
 
-  // 移動・AI
-  for (const p of all) {
+  const all = [...players.values()];
 
+  // 移動・CPU
+  for (const p of all) {
     if (!p.alive) continue;
 
     if (p.hitCooldown > 0) {
       p.hitCooldown--;
     }
 
-    // CPU
+    // CPUの行動
     if (!p.human) {
       const target = findTarget(p, all);
 
@@ -308,8 +345,7 @@ function step() {
         p.input.left = dx < -30;
         p.input.right = dx > 30;
 
-        p.input.boost =
-          Math.abs(dx) > 200;
+        p.input.boost = Math.abs(dx) > 200;
 
         p.input.jump =
           Math.abs(dx) < 110 &&
@@ -318,7 +354,7 @@ function step() {
       }
     }
 
-    // 移動
+    // 左右移動
     const dir =
       (p.input.right ? 1 : 0) -
       (p.input.left ? 1 : 0);
@@ -358,13 +394,14 @@ function step() {
     p.x += p.vx;
     p.y += p.vy;
 
+    // 地面
     if (p.y >= FLOOR - 36) {
       p.y = FLOOR - 36;
       p.vy = 0;
       p.onGround = true;
     }
 
-    // 脱落
+    // ステージから落ちたら脱落
     if (
       p.x < -70 ||
       p.x > W + 70 ||
@@ -420,19 +457,23 @@ function step() {
     }
   }
 
+  // 勝敗判定
   const alive = all.filter(p => p.alive);
 
-  if (alive.length <= 1 && humans().length > 0) {
+  if (
+    alive.length <= 1 &&
+    humans().length > 0
+  ) {
     endMatch(alive[0] || null);
   }
 
-  // 通信は10回/秒
+  // 状態通信は毎秒10回
   if (tick % BROADCAST_INTERVAL === 0) {
     broadcast();
   }
 }
 
-// 20回/秒
+// 物理処理は毎秒20回
 setInterval(step, 1000 / FPS);
 
 const port = process.env.PORT || 3000;
