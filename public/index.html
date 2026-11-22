@@ -11,43 +11,57 @@
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:white;font-family:system-ui,sans-serif;overscroll-behavior:none;touch-action:none}
 button,input{font:inherit}
 input{-webkit-user-select:text;user-select:text}
-button{border:2px solid #d8e8ff;border-radius:13px;background:#304d78;color:white;font-weight:800;padding:11px 15px;touch-action:none;cursor:pointer}
+button{border:2px solid #d8e8ff;border-radius:13px;background:#304d78;color:white;font-weight:800;padding:11px 15px;touch-action:manipulation;cursor:pointer}
 button:active{transform:scale(.97);background:#456b9f}
 button.primary{background:#b35b42;border-color:#ffe0b0}
 .hidden{display:none!important}
 #app{height:100%;width:100%;position:relative;overflow:hidden}
 .screen{position:absolute;inset:0;overflow:auto;padding:16px;background:linear-gradient(145deg,#10192c,#243c5c);touch-action:pan-y}
-.panel{max-width:760px;margin:auto;background:#1b2a46ed;border:2px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 15px 45px #0006}
+.panel{width:100%;max-width:760px;margin:auto;background:#1b2a46ed;border:2px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 15px 45px #0006}
 h1{font-size:clamp(38px,9vw,66px);line-height:1;margin:8px 0;color:var(--gold);text-align:center;text-shadow:4px 5px #693d48}
 h2{margin:4px 0 12px;color:var(--gold)}
 p{line-height:1.55;color:#e4efff}
 .sub{text-align:center;color:#b9d4ef}
 .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
-.row>*{flex:1}
+.row>*{flex:1;min-width:0}
 .field{display:block;width:100%;background:#0d172a;border:1px solid #6f91c4;color:white;border-radius:10px;padding:11px;margin:6px 0 12px}
 #menu,#editor{display:flex;align-items:center;justify-content:center}
 #menu .panel{width:min(100%,560px);text-align:center}
+#editor{align-items:flex-start}
 #editor .panel{width:min(100%,760px)}
-#drawCanvas{width:100%;height:auto;aspect-ratio:16/9;display:block;background:#eaf1f7;background-image:radial-gradient(#c4d4e4 1px,transparent 1px);background-size:18px 18px;border:3px solid #a9c9e9;border-radius:12px;touch-action:none}
+#drawCanvas{width:100%;height:auto;aspect-ratio:16/9;display:block;background-color:#f7fbff;background-image:radial-gradient(#c4d4e4 1px,transparent 1px);background-size:18px 18px;border:3px solid #a9c9e9;border-radius:12px;touch-action:none}
 #inkTrack{height:14px;background:#091426;border-radius:20px;overflow:hidden;border:1px solid #7896bd;flex:1}
 #inkFill{height:100%;width:100%;background:linear-gradient(90deg,#63e6b3,#ffdc72)}
 .small{font-size:12px;color:#b8cce8}
-#gameScreen{position:absolute;inset:0;background:#17263e;overflow:hidden;touch-action:none;overscroll-behavior:none}
+#gameScreen{position:absolute;inset:0;background:#080d18;overflow:hidden;touch-action:none;overscroll-behavior:none}
 #gameCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 #hud{position:absolute;top:calc(8px + env(safe-area-inset-top));left:8px;right:8px;display:flex;justify-content:space-between;gap:8px;pointer-events:none;z-index:2}
-.hudbox{background:#10192cdd;border:1px solid #9dbbe2;border-radius:12px;padding:8px 11px;font-size:13px;font-weight:800}
-#touchControls{position:absolute;left:10px;right:10px;bottom:calc(12px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:end;pointer-events:none;z-index:3}
-.touchgroup{display:flex;gap:8px;pointer-events:auto}
-.touchbtn{width:clamp(54px,15vw,76px);height:clamp(54px,15vw,76px);border-radius:50%;font-size:22px;background:#203b63df;box-shadow:0 4px 0 #0a1427;touch-action:none}
+.hudbox{background:#10192cdd;border:1px solid #9dbbe2;border-radius:12px;padding:7px 10px;font-size:clamp(10px,2.8vw,13px);font-weight:800;max-width:58%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#touchControls{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:end;pointer-events:none;z-index:3}
+.touchgroup{display:flex;gap:clamp(5px,2vw,10px);pointer-events:auto}
+.touchbtn{width:clamp(48px,13vw,76px);height:clamp(48px,13vw,76px);border-radius:50%;font-size:clamp(17px,4vw,22px);padding:0;background:#203b63df;box-shadow:0 4px 0 #0a1427;touch-action:none}
 .touchbtn.boost{background:#a84e3bdf}
 .touchbtn.pressed{transform:scale(.94);filter:brightness(1.25)}
-#deathOverlay{position:absolute;inset:0;z-index:8;background:#050912eF;display:flex;align-items:center;justify-content:center;pointer-events:none}
+#deathOverlay{position:absolute;inset:0;z-index:8;background:#050912ef;display:flex;align-items:center;justify-content:center;pointer-events:none}
 #deathVideo{width:100%;height:100%;object-fit:cover}
 #deathLabel{position:absolute;top:12%;left:0;right:0;text-align:center;font-size:clamp(28px,8vw,64px);font-weight:1000;color:#ff4c4c;text-shadow:0 4px 18px #000}
 #spectateTag{position:absolute;top:calc(60px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#10192ce8;border:1px solid #ff7777;border-radius:14px;padding:9px 15px;font-weight:900;z-index:4;white-space:nowrap}
 #result{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#07101dcc;padding:16px;z-index:10}
 #result .panel{text-align:center;width:min(100%,420px)}
-@media(min-width:800px){.touchbtn{width:70px;height:70px}}
+@media(max-width:600px){
+ .screen{padding:10px}
+ .panel{padding:13px;border-radius:15px}
+ #editor .panel{margin-top:4px}
+ #drawCanvas{border-width:2px}
+ #touchControls{left:7px;right:7px}
+}
+@media(max-height:500px) and (orientation:landscape){
+ #editor{align-items:flex-start}
+ #editor .panel{max-width:650px;padding:10px}
+ #drawCanvas{max-height:42vh;width:auto;max-width:100%;margin:auto}
+ #touchControls{bottom:calc(5px + env(safe-area-inset-bottom))}
+ .touchbtn{width:48px;height:48px}
+}
 </style>
 </head>
 <body>
@@ -56,7 +70,7 @@ p{line-height:1.55;color:#e4efff}
  <div class="panel">
   <h1>CAR CLASH</h1>
   <p class="sub">DRAW YOUR CAR. BUMP YOUR RIVALS.</p>
-  <p>自分で描いた車で、相手をステージの外へ押し出そう！</p>
+  <p>車体もタイヤも、自分で描いたオリジナルカーでライバルを押し出そう！</p>
   <label>プレイヤー名<input id="playerName" class="field" maxlength="16" placeholder="プレイヤー"></label>
   <div class="row"><button id="toEditor" class="primary">車を描く・編集</button><button id="quickPlay">対戦スタート</button></div>
   <p class="small">1人のときはCPUが3台参加。2人以上でCPUは退出します。</p>
@@ -66,9 +80,10 @@ p{line-height:1.55;color:#e4efff}
 <section id="editor" class="screen hidden">
  <div class="panel">
   <h2>🎨 MY CAR STUDIO</h2>
-  <p class="small">横向きの車を描こう！描くとインクを使います。消しゴムで消すと少し回復します。</p>
+  <p class="small">白いキャンバスからスタート！車体・窓・タイヤ・ライトまで自由に描こう。透明な部分はゲーム内でも透明になるよ。</p>
   <canvas id="drawCanvas" width="800" height="450"></canvas>
-  <div class="row" style="margin-top:10px"><b id="inkText">インク 100%</b><div id="inkTrack"><div id="inkFill"></div></div></div>
+  <div class="row" style="margin-top:10px"><b id="inkText">インク 500 / 500</b><div id="inkTrack"><div id="inkFill"></div></div></div>
+  <p class="small">ペンで描くとインクを消費。消しゴムで回復。全部消すとインク満タン！</p>
   <div class="row" style="margin-top:10px"><button id="penBtn" class="primary">✏️ ペン</button><button id="eraserBtn">消しゴム</button><button id="clearBtn">全部消す</button></div>
   <div class="row" style="margin-top:10px"><button id="backMenu">戻る</button><button id="saveCar" class="primary">この車で対戦！</button></div>
  </div>
@@ -96,18 +111,19 @@ p{line-height:1.55;color:#e4efff}
 "use strict";
 const $=id=>document.getElementById(id);
 const SERVER_URL="https://car-clash-pwbt.onrender.com";
-const screens=["menu","editor"];
 const gc=$("gameCanvas"),g=gc.getContext("2d",{alpha:false});
 let socket=null,myId=null,savedCar="",gameOver=false,deadShown=false;
-let ink=100,tool="pen",drawing=false,last=null;
+const MAX_INK=500;
+let ink=MAX_INK,tool="pen",drawing=false,last=null;
 let previousState=null,currentState=null,stateReceivedAt=0;
 let cameraX=600,cameraY=350,cameraZoom=1,shake=0,lastFrame=performance.now();
-let canvasReady=false,lastCanvasWidth=0,lastCanvasHeight=0;
+let canvasReady=false,lastCanvasWidth=0,lastCanvasHeight=0,viewScale=1,viewOffsetX=0,viewOffsetY=0;
 let input={left:false,right:false,jump:false,boost:false};
 const carCache={};
 
 function show(id){
- screens.forEach(s=>$(s).classList.toggle("hidden",s!==id));
+ $("menu").classList.toggle("hidden",id!=="menu");
+ $("editor").classList.toggle("hidden",id!=="editor");
  $("gameScreen").classList.toggle("hidden",id!=="gameScreen");
  if(id==="gameScreen")requestAnimationFrame(()=>{resizeCanvas();lastFrame=performance.now()});
 }
@@ -115,16 +131,19 @@ function resizeCanvas(){
  const r=gc.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,1.5);
  const w=Math.max(1,Math.round(r.width*dpr)),h=Math.max(1,Math.round(r.height*dpr));
  if(gc.width!==w||gc.height!==h){gc.width=w;gc.height=h}
- g.setTransform(gc.width/1200,0,0,gc.height/700,0,0);
+ viewScale=Math.min(gc.width/1200,gc.height/700);
+ viewOffsetX=(gc.width-1200*viewScale)/2;
+ viewOffsetY=(gc.height-700*viewScale)/2;
+ g.setTransform(viewScale,0,0,viewScale,viewOffsetX,viewOffsetY);
  lastCanvasWidth=r.width;lastCanvasHeight=r.height;canvasReady=true;
 }
 
 const dc=$("drawCanvas"),dctx=dc.getContext("2d");
 function setInk(v){
- ink=Math.max(0,Math.min(100,v));
- $("inkText").textContent="インク "+Math.round(ink)+"%";
- $("inkFill").style.width=ink+"%";
- $("inkFill").style.background=ink<20?"#ff6868":"linear-gradient(90deg,#63e6b3,#ffdc72)";
+ ink=Math.max(0,Math.min(MAX_INK,v));
+ $("inkText").textContent="インク "+Math.round(ink)+" / "+MAX_INK;
+ $("inkFill").style.width=(ink/MAX_INK*100)+"%";
+ $("inkFill").style.background=ink<75?"#ff6868":"linear-gradient(90deg,#63e6b3,#ffdc72)";
 }
 function pointerPos(e){
  const r=dc.getBoundingClientRect();
@@ -136,34 +155,81 @@ dc.addEventListener("pointerdown",e=>{
  last=pointerPos(e);
 });
 dc.addEventListener("pointermove",e=>{
- if(!drawing)return;e.preventDefault();
+ if(!drawing)return;
+ e.preventDefault();
  const p=pointerPos(e),dist=Math.hypot(p.x-last.x,p.y-last.y);
  if(tool==="pen"&&ink<=0){last=p;return}
- dctx.save();dctx.lineCap="round";dctx.lineJoin="round";dctx.lineWidth=tool==="pen"?22:42;
- if(tool==="eraser"){dctx.globalCompositeOperation="destination-out";setInk(ink+dist*.055)}
- else{dctx.globalCompositeOperation="source-over";dctx.strokeStyle="#172b43";setInk(ink-dist*.045)}
- dctx.beginPath();dctx.moveTo(last.x,last.y);dctx.lineTo(p.x,p.y);dctx.stroke();dctx.restore();last=p;
+ dctx.save();
+ dctx.lineCap="round";dctx.lineJoin="round";
+ dctx.lineWidth=tool==="pen"?24:46;
+ if(tool==="eraser"){
+  dctx.globalCompositeOperation="destination-out";
+  setInk(ink+dist*.22+2);
+ }else{
+  dctx.globalCompositeOperation="source-over";
+  dctx.strokeStyle="#172b43";
+  const cost=dist*.055+1;
+  if(ink<cost){dctx.restore();last=p;return}
+  setInk(ink-cost);
+ }
+ dctx.beginPath();dctx.moveTo(last.x,last.y);dctx.lineTo(p.x,p.y);dctx.stroke();
+ dctx.restore();last=p;
 });
 function stopDraw(){drawing=false;last=null}
 ["pointerup","pointercancel","lostpointercapture"].forEach(e=>dc.addEventListener(e,stopDraw));
-$("penBtn").onclick=()=>{tool="pen";$("penBtn").classList.add("primary");$("eraserBtn").classList.remove("primary")};
-$("eraserBtn").onclick=()=>{tool="eraser";$("eraserBtn").classList.add("primary");$("penBtn").classList.remove("primary")};
-$("clearBtn").onclick=()=>{dctx.clearRect(0,0,dc.width,dc.height);setInk(100)};
+
+$("penBtn").onclick=()=>{
+ tool="pen";$("penBtn").classList.add("primary");$("eraserBtn").classList.remove("primary");
+};
+$("eraserBtn").onclick=()=>{
+ tool="eraser";$("eraserBtn").classList.add("primary");$("penBtn").classList.remove("primary");
+};
+$("clearBtn").onclick=()=>{
+ dctx.clearRect(0,0,dc.width,dc.height);setInk(MAX_INK);
+};
+
 function carImage(){
- const c=document.createElement("canvas");c.width=400;c.height=225;
- c.getContext("2d").drawImage(dc,0,0,400,225);
- for(const q of [.65,.5,.35]){
-  const v=c.toDataURL("image/webp",q);
+ const pixels=dctx.getImageData(0,0,dc.width,dc.height);
+ const data=pixels.data;
+ let minX=dc.width,minY=dc.height,maxX=-1,maxY=-1;
+ for(let y=0;y<dc.height;y++){
+  for(let x=0;x<dc.width;x++){
+   if(data[(y*dc.width+x)*4+3]>12){
+    if(x<minX)minX=x;if(x>maxX)maxX=x;
+    if(y<minY)minY=y;if(y>maxY)maxY=y;
+   }
+  }
+ }
+ if(maxX<0){
+  alert("まだ車が描かれていないよ！車体やタイヤを描いてね。");
+  return "";
+ }
+ const pad=18;
+ minX=Math.max(0,minX-pad);minY=Math.max(0,minY-pad);
+ maxX=Math.min(dc.width-1,maxX+pad);maxY=Math.min(dc.height-1,maxY+pad);
+ const sw=maxX-minX+1,sh=maxY-minY+1;
+ const out=document.createElement("canvas");out.width=400;out.height=225;
+ const ctx=out.getContext("2d");
+ const scale=Math.min(368/sw,193/sh);
+ const dw=sw*scale,dh=sh*scale;
+ ctx.drawImage(dc,minX,minY,sw,sh,200-dw/2,112.5-dh/2,dw,dh);
+ for(const q of [.78,.62,.48,.35]){
+  const v=out.toDataURL("image/webp",q);
   if(v.startsWith("data:image/webp")&&v.length<180000)return v;
  }
- const png=c.toDataURL("image/png");
+ const png=out.toDataURL("image/png");
  if(png.length<180000)return png;
- alert("車の画像が大きすぎます。少しシンプルに描いてください。");return "";
+ alert("画像が大きすぎます。細かい部分を少し減らしてみてね。");
+ return "";
 }
+
 $("toEditor").onclick=()=>show("editor");
 $("backMenu").onclick=()=>show("menu");
 $("saveCar").onclick=()=>{const v=carImage();if(v){savedCar=v;startGame()}};
-$("quickPlay").onclick=()=>{if(!savedCar){savedCar=carImage();if(!savedCar)return}startGame()};
+$("quickPlay").onclick=()=>{
+ if(!savedCar){show("editor");alert("まず自分の車を描こう！");return}
+ startGame();
+};
 
 function resetRender(){
  previousState=null;currentState=null;cameraX=600;cameraY=350;
@@ -175,22 +241,30 @@ function resetRender(){
  Object.keys(carCache).forEach(k=>delete carCache[k]);
 }
 function startGame(){
- if(typeof io==="undefined"){alert("通信ライブラリを読み込めません。ネット接続を確認してください。");return}
+ if(typeof io==="undefined"){
+  alert("通信ライブラリを読み込めません。ネット接続を確認してください。");return;
+ }
  if(socket){socket.disconnect();socket=null}
  resetRender();show("gameScreen");
  $("hudState").textContent="サーバーに接続中…";
  socket=io(SERVER_URL,{transports:["websocket","polling"],timeout:20000,reconnection:true});
  socket.on("connect",()=>{
   myId=socket.id;
-  socket.emit("join",{name:$("playerName").value.trim()||"PLAYER",car:savedCar||carImage()});
+  socket.emit("join",{name:$("playerName").value.trim()||"PLAYER",car:savedCar});
   $("hudState").textContent="ARENA CONNECTED";
  });
- socket.on("connect_error",()=>{$("hudState").textContent="接続エラー：サーバー起動を待っています"});
- socket.on("disconnect",()=>{if(!gameOver)$("hudState").textContent="通信が切れました"});
+ socket.on("connect_error",()=>{
+  $("hudState").textContent="接続エラー：サーバー起動を待っています";
+ });
+ socket.on("disconnect",()=>{
+  if(!gameOver)$("hudState").textContent="通信が切れました";
+ });
  socket.on("joined",d=>{myId=d.id});
  socket.on("carUpdate",d=>{
   if(!d||!d.id||typeof d.car!=="string")return;
-  const im=new Image();im.onload=()=>carCache[d.id]=im;im.src=d.car;
+  const im=new Image();
+  im.onload=()=>carCache[d.id]=im;
+  im.src=d.car;
  });
  socket.on("carRemove",d=>{if(d&&d.id)delete carCache[d.id]});
  socket.on("state",s=>{if(s&&Array.isArray(s.players))receiveState(s)});
@@ -210,7 +284,9 @@ function startGame(){
  requestAnimationFrame(()=>resizeCanvas());
 }
 
-function sendInput(){if(socket&&socket.connected&&!gameOver&&!deadShown)socket.emit("input",input)}
+function sendInput(){
+ if(socket&&socket.connected&&!gameOver&&!deadShown)socket.emit("input",input);
+}
 function releaseAllInputs(){
  Object.keys(input).forEach(k=>input[k]=false);
  document.querySelectorAll("[data-input]").forEach(b=>b.classList.remove("pressed"));
@@ -223,7 +299,9 @@ document.querySelectorAll("[data-input]").forEach(b=>{
   try{b.setPointerCapture(e.pointerId)}catch(_){}
   input[k]=true;b.classList.add("pressed");sendInput();
  });
- const up=e=>{e.preventDefault();input[k]=false;b.classList.remove("pressed");sendInput()};
+ const up=e=>{
+  e.preventDefault();input[k]=false;b.classList.remove("pressed");sendInput();
+ };
  ["pointerup","pointercancel","lostpointercapture"].forEach(ev=>b.addEventListener(ev,up));
 });
 window.addEventListener("blur",releaseAllInputs);
@@ -270,16 +348,20 @@ const bg=new Image();bg.src="city.JPG";
 let bgReady=false;bg.onload=()=>bgReady=true;
 
 function drawBackground(){
- // 背景はステージ内だけに描画し、外側へ引き伸ばさない
  g.fillStyle="#080d18";g.fillRect(-500,-100,2200,900);
  if(bgReady)g.drawImage(bg,0,0,1200,500);
- else{const gr=g.createLinearGradient(0,0,0,500);gr.addColorStop(0,"#83c9e9");gr.addColorStop(1,"#d9e9ee");g.fillStyle=gr;g.fillRect(0,0,1200,500)}
+ else{
+  const gr=g.createLinearGradient(0,0,0,500);
+  gr.addColorStop(0,"#83c9e9");gr.addColorStop(1,"#d9e9ee");
+  g.fillStyle=gr;g.fillRect(0,0,1200,500);
+ }
  g.fillStyle="#46515b";g.fillRect(0,500,1200,200);
  g.fillStyle="#e6d4a5";g.fillRect(0,500,1200,12);
- g.fillStyle="#f8e6a8";for(let x=40;x<1200;x+=150)g.fillRect(x,600,75,7);
+ g.fillStyle="#f8e6a8";
+ for(let x=40;x<1200;x+=150)g.fillRect(x,600,75,7);
  g.fillStyle="#263746";g.fillRect(0,512,1200,8);
- g.fillStyle="#fff";g.font="bold 16px sans-serif";g.textAlign="left";g.fillText("ARENA STREET",24,540);
- // 両端に明確なDEATHゾーンを設置
+ g.fillStyle="#fff";g.font="bold 16px sans-serif";g.textAlign="left";
+ g.fillText("ARENA STREET",24,540);
  g.save();
  const edge=(x,flip)=>{
   g.translate(x,0);if(flip)g.scale(-1,1);
@@ -288,34 +370,53 @@ function drawBackground(){
   g.globalAlpha=.25;g.fillStyle="#ff344f";
   for(let y=0;y<700;y+=28)g.fillRect(-24,y,24,12);
   g.globalAlpha=1;g.fillStyle="#fff";g.font="900 18px sans-serif";
-  g.translate(-13,350);g.rotate(-Math.PI/2);g.textAlign="center";g.fillText("DEATH ZONE",0,0);
+  g.translate(-13,350);g.rotate(-Math.PI/2);
+  g.textAlign="center";g.fillText("DEATH ZONE",0,0);
  };
  edge(0,false);edge(1200,true);g.restore();
 }
 function drawCar(p){
- g.save();g.translate(p.x,p.y);
+ g.save();
+ g.translate(p.x,p.y);
  const squash=Math.max(.62,Math.min(1.12,p.squash||1));
- g.rotate(p.angle||0);g.scale(p.facing<0?-1:1,1);g.scale(1/squash,squash);
- g.fillStyle="#17202b66";g.beginPath();g.ellipse(0,27,52,8,0,0,Math.PI*2);g.fill();
- g.fillStyle="#171c25";g.beginPath();g.arc(-25,12,15,0,Math.PI*2);g.arc(26,12,15,0,Math.PI*2);g.fill();
- g.fillStyle="#c8d7e5";g.beginPath();g.arc(-25,12,6,0,Math.PI*2);g.arc(26,12,6,0,Math.PI*2);g.fill();
+ g.rotate(p.angle||0);
+ g.scale(p.facing<0?-1:1,1);
+ g.scale(1/squash,squash);
+ g.fillStyle="#17202b66";
+ g.beginPath();g.ellipse(0,24,48,6,0,0,Math.PI*2);g.fill();
  const im=carCache[p.id];
- if(im&&im.complete&&im.naturalWidth)g.drawImage(im,-52,-49,104,58);
- else{g.fillStyle=p.color||"#f5b84a";g.fillRect(-48,-28,96,38);g.fillStyle="#d5efff";g.fillRect(-15,-48,38,24)}
+ if(im&&im.complete&&im.naturalWidth){
+  g.drawImage(im,-52,-49,104,58);
+ }else{
+  // 他プレイヤーの画像読み込み中は車体を勝手に作らず、名前だけ表示する
+  g.fillStyle="#dce8f5";
+  g.font="bold 12px sans-serif";
+  g.textAlign="center";
+  g.fillText("LOADING CAR",0,-15);
+ }
  if((p.impact||0)>.35){
-  g.globalAlpha=Math.min(.65,p.impact*.7);g.strokeStyle="#fff4b2";g.lineWidth=4;
-  for(let i=0;i<3;i++){g.beginPath();g.moveTo(-58-i*8,-18+i*12);g.lineTo(-85-i*12,-18+i*12);g.stroke()}
+  g.globalAlpha=Math.min(.65,p.impact*.7);
+  g.strokeStyle="#fff4b2";g.lineWidth=4;
+  for(let i=0;i<3;i++){
+   g.beginPath();
+   g.moveTo(-58-i*8,-18+i*12);
+   g.lineTo(-85-i*12,-18+i*12);
+   g.stroke();
+  }
  }
  g.restore();
 }
 function drawPlayerName(p){
- g.save();g.fillStyle="#102036";g.fillRect(p.x-34,p.y-65,68,7);
- g.fillStyle=p.human?"#7ce5ee":"#ffd36c";g.fillRect(p.x-34,p.y-65,68,7);
- g.fillStyle="#fff";g.font="bold 15px sans-serif";g.textAlign="center";g.fillText(p.name,p.x,p.y-75);g.restore();
+ g.save();
+ g.fillStyle="#102036";g.fillRect(p.x-34,p.y-65,68,7);
+ g.fillStyle=p.human?"#7ce5ee":"#ffd36c";
+ g.fillRect(p.x-34,p.y-65,68,7);
+ g.fillStyle="#fff";g.font="bold 15px sans-serif";g.textAlign="center";
+ g.fillText(p.name,p.x,p.y-75);
+ g.restore();
 }
 function updateCamera(players,dt){
  let target=players.find(p=>p.id===myId&&p.alive);
- // 自分が脱落したら、生き残っている相手を追いかけて観戦
  if(!target)target=players.find(p=>p.alive);
  if(target){
   const tx=Math.max(0,Math.min(1200,target.x+(target.vx||0)*8));
@@ -329,11 +430,20 @@ function updateCamera(players,dt){
 function drawGame(s,dt){
  updateCamera(s.players||[],dt);
  shake*=.82;if(shake<.15)shake=0;
+ // 画面全体を黒く塗り、ゲーム画面は縦横比を保って中央に配置
+ g.save();
+ g.setTransform(1,0,0,1,0,0);
+ g.fillStyle="#080d18";g.fillRect(0,0,gc.width,gc.height);
+ g.restore();
  g.save();
  const sx=(Math.random()-.5)*shake,sy=(Math.random()-.5)*shake;
- g.translate(600+sx,350+sy);g.scale(cameraZoom,cameraZoom);g.translate(-cameraX,-cameraY);
+ g.translate(600+sx,350+sy);
+ g.scale(cameraZoom,cameraZoom);
+ g.translate(-cameraX,-cameraY);
  drawBackground();
- for(const p of s.players||[])if(p.alive){drawCar(p);drawPlayerName(p)}
+ for(const p of s.players||[]){
+  if(p.alive){drawCar(p);drawPlayerName(p)}
+ }
  g.restore();
  $("hudState").textContent=s.status||"BUMP! STAY ON THE STREET";
  $("hudPlayers").textContent="参加 "+s.players.filter(p=>p.human).length+"人 / 残り "+s.players.filter(p=>p.alive).length+"台";
@@ -343,22 +453,42 @@ function renderLoop(now){
  if(!$("gameScreen").classList.contains("hidden")){
   const r=gc.getBoundingClientRect();
   if(!canvasReady||Math.abs(r.width-lastCanvasWidth)>1||Math.abs(r.height-lastCanvasHeight)>1)resizeCanvas();
-  if(currentState){const s=getSmoothState(now);if(s)drawGame(s,dt)}
-  else{g.fillStyle="#10192c";g.fillRect(0,0,1200,700);g.fillStyle="#fff";g.font="bold 28px sans-serif";g.textAlign="center";g.fillText("CONNECTING TO ARENA...",600,350)}
+  if(currentState){
+   // resizeCanvasで設定した画面フィット用の変換を毎フレーム適用
+   g.setTransform(viewScale,0,0,viewScale,viewOffsetX,viewOffsetY);
+   const s=getSmoothState(now);if(s)drawGame(s,dt);
+  }else{
+   g.save();g.setTransform(1,0,0,1,0,0);
+   g.fillStyle="#10192c";g.fillRect(0,0,gc.width,gc.height);
+   g.fillStyle="#fff";g.font="bold 28px sans-serif";g.textAlign="center";
+   g.fillText("CONNECTING TO ARENA...",gc.width/2,gc.height/2);
+   g.restore();
+  }
  }
  requestAnimationFrame(renderLoop);
 }
-window.addEventListener("resize",()=>{if(!$("gameScreen").classList.contains("hidden"))resizeCanvas()});
-if(window.visualViewport)window.visualViewport.addEventListener("resize",()=>{if(!$("gameScreen").classList.contains("hidden"))resizeCanvas()});
-document.addEventListener("contextmenu",e=>{if(!e.target.closest("input"))e.preventDefault()});
+window.addEventListener("resize",()=>{
+ if(!$("gameScreen").classList.contains("hidden"))resizeCanvas();
+});
+if(window.visualViewport){
+ window.visualViewport.addEventListener("resize",()=>{
+  if(!$("gameScreen").classList.contains("hidden"))resizeCanvas();
+ });
+}
+document.addEventListener("contextmenu",e=>{
+ if(!e.target.closest("input"))e.preventDefault();
+});
 document.addEventListener("dblclick",e=>e.preventDefault());
 document.addEventListener("gesturestart",e=>e.preventDefault(),{passive:false});
 document.addEventListener("gesturechange",e=>e.preventDefault(),{passive:false});
 document.addEventListener("gestureend",e=>e.preventDefault(),{passive:false});
 let lastTouchEnd=0;
 document.addEventListener("touchend",e=>{
- const now=Date.now();if(now-lastTouchEnd<=300)e.preventDefault();lastTouchEnd=now;
+ const now=Date.now();
+ if(now-lastTouchEnd<=300)e.preventDefault();
+ lastTouchEnd=now;
 },{passive:false});
+
 requestAnimationFrame(renderLoop);
 })();
 </script>
