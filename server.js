@@ -14,7 +14,7 @@ const io=new Server(server,{
 });
 
 app.use(express.static(path.join(__dirname,"public")));
-app.get("/health",(_req,res)=>res.json({ok:true,game:"CAR CLASH",mode:"DEATH SPECTATE"}));
+app.get("/health",(_req,res)=>res.json({ok:true,game:"CAR CLASH",mode:"CUSTOM CAR + MOBILE FIT"}));
 
 const players=new Map();
 const W=1200,FLOOR=500,CAR_W=78,CAR_H=42,FPS=30,STEP_MS=1000/FPS;
@@ -211,7 +211,6 @@ function updatePlayer(p,all){
   if(p.squashTimer<=0)p.squash+=(1-p.squash)*.22;
   p.angle=Math.max(-1.25,Math.min(1.25,p.angle));
 
-  // ステージの端、または床下へ出たら即脱落。復帰処理はしない。
   if(p.x< -CAR_W/2||p.x>W+CAR_W/2||p.y>620)eliminate(p);
 }
 
@@ -275,7 +274,7 @@ function gameLoop(){
 
 const port=process.env.PORT||3000;
 server.listen(port,()=>{
-  console.log("CAR CLASH DEATH SPECTATE SERVER READY");
+  console.log("CAR CLASH CUSTOM CAR SERVER READY");
   console.log("Port:",port);
   lastStep=Date.now();
   gameLoop();
