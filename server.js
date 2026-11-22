@@ -45,6 +45,7 @@ let tick = 0;
 let matchEnded = false;
 let endTimer = null;
 let lastStep = Date.now();
+let accumulator = 0;
 
 function makePlayer(id, data = {}, human = true) {
   const car =
@@ -59,30 +60,24 @@ function makePlayer(id, data = {}, human = true) {
     name: String(data.name || "PLAYER").slice(0, 16),
     car,
     human,
-
     x: 120 + Math.random() * 960,
     y: FLOOR - CAR_H,
-
     vx: 0,
     vy: 0,
-
     facing: Math.random() < 0.5 ? -1 : 1,
     angle: 0,
     spin: 0,
     squash: 1,
     squashTimer: 0,
     impact: 0,
-
     alive: true,
     color: COLORS[Math.floor(Math.random() * COLORS.length)],
-
     input: {
       left: false,
       right: false,
       jump: false,
       boost: false
     },
-
     onGround: true,
     hitCooldown: 0,
     jumpLock: false,
@@ -323,14 +318,12 @@ function updatePlayer(p, all) {
 
   if (!p.input.jump) p.jumpLock = false;
 
-  // 重力と空中抵抗
   p.vy += 0.72;
   p.vy = Math.min(p.vy, 19);
 
   p.x += p.vx;
   p.y += p.vy;
 
-  // 地面への着地
   if (p.y >= FLOOR - CAR_H) {
     const landingSpeed = p.vy;
 
@@ -349,7 +342,6 @@ function updatePlayer(p, all) {
     p.onGround = false;
   }
 
-  // 回転の制御
   if (p.onGround) {
     p.spin *= 0.82;
     p.angle += (0 - p.angle) * 0.13;
@@ -359,14 +351,12 @@ function updatePlayer(p, all) {
     p.spin *= 0.995;
   }
 
-  // 車体のつぶれが戻る
   if (p.squashTimer <= 0) {
     p.squash += (1 - p.squash) * 0.22;
   }
 
   p.angle = Math.max(-1.25, Math.min(1.25, p.angle));
 
-  // ステージ外へ落下
   if (p.x < -100 || p.x > W + 100 || p.y > 780) {
     p.alive = false;
     p.vx = 0;
@@ -397,7 +387,6 @@ function collideCars(all) {
       const relativeSpeed = Math.abs(a.vx - b.vx);
       const impact = Math.max(2, relativeSpeed * 0.85 + 2.5);
 
-      // 衝突位置を分離して重なり続けるのを防止
       const pushApart = Math.max(2, overlapX * 0.28);
       a.x -= sign * pushApart;
       b.x += sign * pushApart;
@@ -408,7 +397,6 @@ function collideCars(all) {
         a.vx -= sign * impulse * 0.78;
         b.vx += sign * impulse * 0.78;
 
-        // 上下方向にも衝撃を与える
         const lift = Math.min(13, 3.2 + impact * 0.48);
         a.vy -= lift * (a.onGround ? 1 : 0.38);
         b.vy -= lift * (b.onGround ? 1 : 0.38);
@@ -416,14 +404,12 @@ function collideCars(all) {
         a.onGround = false;
         b.onGround = false;
 
-        // 回転の反動
         a.spin -= sign * Math.min(0.18, impact * 0.012);
         b.spin += sign * Math.min(0.18, impact * 0.012);
 
         a.angle -= sign * 0.12;
         b.angle += sign * 0.12;
 
-        // 衝突時の車体変形
         const squash = Math.max(0.62, 1 - impact * 0.018);
         a.squash = squash;
         b.squash = squash;
@@ -457,7 +443,6 @@ function step() {
     endMatch(alive[0] || null);
   }
 
-  // 軽量な状態だけを30FPSで配信
   broadcast();
 }
 
@@ -466,10 +451,10 @@ function gameLoop() {
   const elapsed = Math.min(now - lastStep, 100);
   lastStep = now;
 
-  // 遅延時に一気に大量計算しない
   accumulator += elapsed;
 
   let count = 0;
+
   while (accumulator >= STEP_MS && count < 3) {
     step();
     accumulator -= STEP_MS;
@@ -482,8 +467,6 @@ function gameLoop() {
 
   setTimeout(gameLoop, Math.max(1, STEP_MS - accumulator));
 }
-
-let accumulator = 0;
 
 const port = process.env.PORT || 3000;
 
