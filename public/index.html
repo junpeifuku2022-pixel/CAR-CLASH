@@ -212,6 +212,8 @@ p{
 }
 
 #gameCanvas{
+  position:absolute;
+  inset:0;
   width:100%;
   height:100%;
   display:block;
@@ -229,6 +231,7 @@ p{
   justify-content:space-between;
   gap:8px;
   pointer-events:none;
+  z-index:2;
 }
 
 .hudbox{
@@ -249,6 +252,7 @@ p{
   justify-content:space-between;
   align-items:end;
   pointer-events:none;
+  z-index:3;
 }
 
 .touchgroup{
@@ -272,6 +276,11 @@ p{
 
 .touchbtn.boost{
   background:#a84e3bdf;
+}
+
+.touchbtn.pressed{
+  transform:scale(.94);
+  filter:brightness(1.25);
 }
 
 #result{
@@ -442,6 +451,39 @@ const $ = id => document.getElementById(id);
 
 const screens = ["menu","editor","lobby"];
 
+const gc = $("gameCanvas");
+const g = gc.getContext("2d",{alpha:false});
+
+let canvasReady = false;
+let lastCanvasWidth = 0;
+let lastCanvasHeight = 0;
+
+function resizeCanvas(){
+  const rect = gc.getBoundingClientRect();
+
+  const w = Math.max(1,rect.width);
+  const h = Math.max(1,rect.height);
+  const dpr = Math.min(window.devicePixelRatio || 1,1.5);
+
+  const targetW = Math.max(1,Math.round(w*dpr));
+  const targetH = Math.max(1,Math.round(h*dpr));
+
+  if(gc.width!==targetW || gc.height!==targetH){
+    gc.width = targetW;
+    gc.height = targetH;
+  }
+
+  g.setTransform(
+    gc.width/1200,0,
+    0,gc.height/700,
+    0,0
+  );
+
+  lastCanvasWidth = w;
+  lastCanvasHeight = h;
+  canvasReady = true;
+}
+
 function show(id){
   screens.forEach(s=>{
     $(s).classList.toggle("hidden",s!==id);
@@ -451,6 +493,13 @@ function show(id){
     "hidden",
     id!=="gameScreen"
   );
+
+  if(id==="gameScreen"){
+    requestAnimationFrame(()=>{
+      resizeCanvas();
+      lastFrame = performance.now();
+    });
+  }
 }
 
 let savedCar = "";
@@ -495,7 +544,6 @@ function pointerPos(e){
   };
 }
 
-// お絵描き
 dc.addEventListener("pointerdown",e=>{
   e.preventDefault();
 
@@ -577,7 +625,6 @@ $("clearBtn").onclick = ()=>{
   setInk(100);
 };
 
-// 車画像を軽量化して保存
 function carImage(){
   const c = document.createElement("canvas");
 
@@ -643,9 +690,34 @@ $("leaveLobby").onclick = ()=>{
   show("menu");
 };
 
-// 接続状態
 function status(t){
   $("status").textContent = t;
+}
+
+let input = {
+  left:false,
+  right:false,
+  jump:false,
+  boost:false
+};
+
+function sendInput(){
+  if(socket && socket.connected){
+    socket.emit("input",input);
+  }
+}
+
+function releaseAllInputs(){
+  input.left = false;
+  input.right = false;
+  input.jump = false;
+  input.boost = false;
+
+  document.querySelectorAll("[data-input]").forEach(b=>{
+    b.classList.remove("pressed");
+  });
+
+  sendInput();
 }
 
 function connect(){
@@ -678,6 +750,7 @@ function connect(){
   currentState = null;
   cameraX = 600;
   cameraY = 350;
+  cameraZoom = 1;
   shake = 0;
 
   socket = io(url,{
@@ -697,7 +770,15 @@ function connect(){
       car:savedCar || carImage()
     });
 
+    $("result").classList.add("hidden");
     show("gameScreen");
+
+    // 非表示中に測った1×1サイズを使わず、
+    // 表示された後の実際のサイズで描画領域を作り直す
+    requestAnimationFrame(()=>{
+      resizeCanvas();
+      drawBackground();
+    });
   });
 
   socket.on("connect_error",()=>{
@@ -758,33 +839,6 @@ function connect(){
 
 $("connect").onclick = connect;
 
-// 操作入力
-let input = {
-  left:false,
-  right:false,
-  jump:false,
-  boost:false
-};
-
-function sendInput(){
-  if(socket && socket.connected){
-    socket.emit("input",input);
-  }
-}
-
-function releaseAllInputs(){
-  input.left = false;
-  input.right = false;
-  input.jump = false;
-  input.boost = false;
-
-  document.querySelectorAll("[data-input]").forEach(b=>{
-    b.classList.remove("pressed");
-  });
-
-  sendInput();
-}
-
 document.querySelectorAll("[data-input]").forEach(b=>{
   const k = b.dataset.input;
 
@@ -830,7 +884,6 @@ $("again").onclick = ()=>{
   }
 };
 
-// iPad Safariのダブルタップ拡大・長押しメニュー対策
 document.addEventListener("contextmenu",e=>{
   if(!e.target.closest("input")){
     e.preventDefault();
@@ -865,7 +918,6 @@ document.addEventListener("touchend",e=>{
   lastTouchEnd = now;
 },{passive:false});
 
-// 背景
 const bg = new Image();
 bg.src = "city.JPG";
 
@@ -874,10 +926,6 @@ let bgReady = false;
 bg.onload = ()=>{
   bgReady = true;
 };
-
-// ゲーム画面
-const gc = $("gameCanvas");
-const g = gc.getContext("2d",{alpha:false});
 
 const carCache = {};
 
@@ -897,7 +945,6 @@ function receiveState(s){
   currentState = s;
   stateReceivedAt = performance.now();
 
-  // 衝突時の揺れ
   const me = s.players.find(p=>p.id===myId);
 
   if(me && me.impact > 0.45){
@@ -923,7 +970,6 @@ function getSmoothState(now){
 
     if(!old) return p;
 
-    // 通信間隔の間だけ少し先を予測
     const extra = Math.min(elapsed/1000,0.045);
 
     const predictedX = p.x + (p.vx || 0)*extra;
@@ -941,30 +987,6 @@ function getSmoothState(now){
   return {...currentState,players};
 }
 
-function resizeCanvas(){
-  const dpr = Math.min(window.devicePixelRatio || 1,1.5);
-
-  const w = Math.max(1,gc.clientWidth);
-  const h = Math.max(1,gc.clientHeight);
-
-  const targetW = Math.round(w*dpr);
-  const targetH = Math.round(h*dpr);
-
-  if(gc.width!==targetW || gc.height!==targetH){
-    gc.width = targetW;
-    gc.height = targetH;
-  }
-
-  g.setTransform(
-    gc.width/1200,0,
-    0,gc.height/700,
-    0,0
-  );
-}
-
-window.addEventListener("resize",resizeCanvas);
-resizeCanvas();
-
 function drawBackground(){
   g.fillStyle = "#83c9e9";
   g.fillRect(0,0,1200,700);
@@ -979,7 +1001,6 @@ function drawBackground(){
     g.fillRect(0,0,1200,500);
   }
 
-  // 道路
   g.fillStyle = "#46515b";
   g.fillRect(0,500,1200,200);
 
@@ -1006,13 +1027,11 @@ function drawCar(p){
 
   g.translate(p.x,p.y);
 
-  // つぶれ表現
   const squash = Math.max(0.62,Math.min(1.12,p.squash || 1));
 
   g.rotate(p.angle || 0);
   g.scale(p.facing<0?-1:1,1);
 
-  // 衝撃のスピード線
   if((p.impact || 0)>0.35){
     g.globalAlpha = Math.min(0.65,p.impact*0.7);
     g.strokeStyle = "#fff4b2";
@@ -1030,13 +1049,11 @@ function drawCar(p){
 
   g.scale(1/squash,squash);
 
-  // 影
   g.fillStyle = "#17202b66";
   g.beginPath();
   g.ellipse(0,27,52,8,0,0,Math.PI*2);
   g.fill();
 
-  // タイヤ
   g.fillStyle = "#171c25";
 
   g.beginPath();
@@ -1044,7 +1061,6 @@ function drawCar(p){
   g.arc(26,12,15,0,Math.PI*2);
   g.fill();
 
-  // ホイール
   g.fillStyle = "#c8d7e5";
 
   g.beginPath();
@@ -1143,15 +1159,46 @@ function renderLoop(now){
   const dt = Math.min(0.05,(now-lastFrame)/1000);
   lastFrame = now;
 
-  if(currentState && !$("gameScreen").classList.contains("hidden")){
-    const smoothState = getSmoothState(now);
+  // 画面が表示された後のサイズを毎フレーム確認。
+  // iPadの回転やSafariの表示領域変更にも対応する。
+  if(!$("gameScreen").classList.contains("hidden")){
+    const rect = gc.getBoundingClientRect();
 
-    if(smoothState){
-      drawGame(smoothState,dt);
+    if(
+      !canvasReady ||
+      Math.abs(rect.width-lastCanvasWidth)>1 ||
+      Math.abs(rect.height-lastCanvasHeight)>1
+    ){
+      resizeCanvas();
+    }
+
+    if(currentState){
+      const smoothState = getSmoothState(now);
+
+      if(smoothState){
+        drawGame(smoothState,dt);
+      }
+    }else{
+      // 通信状態が届く前も背景を表示する
+      drawBackground();
     }
   }
 
   requestAnimationFrame(renderLoop);
+}
+
+window.addEventListener("resize",()=>{
+  if(!$("gameScreen").classList.contains("hidden")){
+    resizeCanvas();
+  }
+});
+
+if(window.visualViewport){
+  window.visualViewport.addEventListener("resize",()=>{
+    if(!$("gameScreen").classList.contains("hidden")){
+      resizeCanvas();
+    }
+  });
 }
 
 requestAnimationFrame(renderLoop);
